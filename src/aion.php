@@ -153,13 +153,17 @@ function aion_char_name(array $m): string
 function aion_armory_links(array $m): array
 {
     if (aion_enabled() && ($m['sync_status'] ?? '') !== 'ok') return [];
+    // Identifiant officiel (base64url, p. ex. « uKNAI_…Lb4= ») : gardé tel quel, Questlog l'attend avec son « = ».
+    $charId = (string) ($m['aion_char_id'] ?? '');
     $vars = [
         '{region}' => rawurlencode(strtolower((string) cfg('aion_region'))),
         '{server}' => rawurlencode(mb_strtolower((string) cfg('aion_server_name'))),
         '{name}'   => rawurlencode(aion_char_name($m)),
+        '{id}'     => preg_match('/^[A-Za-z0-9_\-]+=*$/', $charId) ? $charId : '',
     ];
     $links = [];
     foreach ((array) cfg('aion_armory_links') as $label => $tpl) {
+        if (str_contains((string) $tpl, '{id}') && $vars['{id}'] === '') continue; // pas encore lié au site officiel
         $links[(string) $label] = strtr((string) $tpl, $vars);
     }
     return $links;
