@@ -1,0 +1,16 @@
+# --- Données de la légion : ne jamais les mettre dans git ---
+# Base SQLite (membres, comptes, salles), sauvegardes et fichiers temporaires
+data/*
+!data/.htaccess
+*.sqlite
+*.sqlite-*
+# Recensement importé de l'Excel (pseudos, disponibilités, notes)
+seed/membres.json
+# Icônes envoyées depuis le site
+public/assets/classes/custom/*
+!public/assets/classes/custom/.htaccess
+# Exports et fichiers d'origine
+*.xlsx
+*.xls
+*.csv
+*.zip

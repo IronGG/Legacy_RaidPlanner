@@ -1,0 +1,38 @@
+[
+  {
+    "pseudo": "Elyosia",
+    "classe": "Clerc",
+    "role": "Soin",
+    "gs": 2950,
+    "cp": 185000,
+    "connaissance": "Confirmé",
+    "meilleure_etape": "Ludra - proche",
+    "objectif": "Clear",
+    "jours": ["Lun", "Mer", "Ven"],
+    "creneau": "21h - 00h",
+    "helper": 1,
+    "inscription": "Confirmé",
+    "clear_semaine": 0,
+    "shot_caller": 0,
+    "notes": null,
+    "verifie": 1
+  },
+  {
+    "pseudo": "Brisecroc",
+    "classe": "Templier",
+    "role": "Tank",
+    "gs": 2900,
+    "cp": 178000,
+    "connaissance": "Intermédiaire",
+    "meilleure_etape": "Ludra - try",
+    "objectif": "Progression",
+    "jours": ["Mar", "Jeu", "Sam", "Dim"],
+    "creneau": "20h - 23h",
+    "helper": 0,
+    "inscription": "À confirmer",
+    "clear_semaine": 0,
+    "shot_caller": 0,
+    "notes": null,
+    "verifie": 0
+  }
+]

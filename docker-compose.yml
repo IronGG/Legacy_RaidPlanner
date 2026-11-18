@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - guildraid-data:/var/www/app/data   # la base SQLite survit aux reconstructions
+    restart: unless-stopped
+
+volumes:
+  guildraid-data:
