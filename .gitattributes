@@ -5,3 +5,4 @@ Dockerfile export-ignore
 docker-compose.yml export-ignore
 start.bat export-ignore
 package.bat export-ignore
+tools export-ignore

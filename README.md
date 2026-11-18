@@ -79,6 +79,7 @@ et `bin/` contiennent aussi un `.htaccess` qui bloque l'accès si ce n'est pas p
 ## Importer le recensement de l'Excel
 
 `seed/membres.json` (hors git) contient les membres de l'Excel. Il est importé tout seul à la création de la base.
+Pour le refaire à partir de l'Excel (onglet « Membres ») : `python tools/excel_vers_json.py` (Python 3 + `pip install openpyxl`).
 Pour l'importer dans une base qui existe déjà (par exemple sur le serveur), en SSH :
 
 ```bash
