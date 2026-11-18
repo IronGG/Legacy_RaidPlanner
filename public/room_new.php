@@ -9,6 +9,7 @@ if (!can_create_room($me)) {
 
 $errors = [];
 $v = room_form_values(null);
+$v['kind'] = in_choice('kind', ['raid', 'donjon'], 'raid', $_GET);
 if (is_post()) {
     [$v, $errors, $data] = room_form_read(null);
     if (!$errors) {

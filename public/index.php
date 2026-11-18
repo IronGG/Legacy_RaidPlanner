@@ -4,8 +4,13 @@ $me = require_login();
 auto_archive();
 $rooms = rooms_for_index();
 
+// Filtre raid / donjon, gardé pour la session
+$type = in_choice('type', array_keys(ROOM_FILTERS), null, $_GET) ?? ($_SESSION['room_filter'] ?? 'all');
+if (!isset(ROOM_FILTERS[$type])) $type = 'all';
+if (isset($_GET['type'])) $_SESSION['room_filter'] = $type;
+
 if (isset($_GET['partial'])) {
-    render_room_list($rooms, $me);
+    render_room_index($rooms, $me, $type);
     exit;
 }
 
@@ -14,14 +19,14 @@ page_header('Salles', 'rooms');
 ?>
 <section class="page-head">
   <div>
-    <h1>Salles de raid</h1>
-    <p class="lede">Rejoins une salle tant que ses inscriptions sont ouvertes. Une fois le délai passé, elle reste ouverte pour les départs et les remplacements.</p>
+    <h1>Salles</h1>
+    <p class="lede">Rejoins un raid tant que ses inscriptions sont ouvertes : une fois le délai passé, il reste ouvert pour les départs et les remplacements. Un donjon reste ouvert jusqu'à ce que son chef le termine.</p>
   </div>
-  <?php if (can_create_room($me)): ?><a class="btn btn-gold" href="room_new.php">Créer une salle</a><?php endif; ?>
+  <?php if (can_create_room($me)): ?><a class="btn btn-gold" href="room_new.php<?= $type === 'donjon' ? '?kind=donjon' : '' ?>">Créer une salle</a><?php endif; ?>
 </section>
 
-<div data-live data-version="<?= e(rooms_signature()) ?>" data-version-url="api.php" data-partial-url="index.php?partial=1">
-  <?php render_room_list($rooms, $me); ?>
+<div data-live data-version="<?= e(rooms_signature()) ?>" data-version-url="api.php" data-partial-url="index.php?partial=1&amp;type=<?= e($type) ?>">
+  <?php render_room_index($rooms, $me, $type); ?>
 </div>
 
 <section class="legion">

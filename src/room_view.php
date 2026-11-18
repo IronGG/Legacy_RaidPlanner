@@ -29,13 +29,41 @@ function join_form(array $room, array $check, string $btnClass = 'btn-gold'): st
         . '<input type="hidden" name="action" value="join"><button class="btn ' . e($btnClass) . '" type="submit">' . e($check['label']) . '</button></form>';
 }
 
-function render_room_list(array $rooms, array $me): void
+/** Filtre de la liste des salles : 'all', 'raid' ou 'donjon'. */
+const ROOM_FILTERS = ['all' => 'Toutes', 'raid' => 'Raids', 'donjon' => 'Donjons'];
+
+/** Onglets de filtre (avec le nombre de salles ouvertes) puis la liste filtrée. */
+function render_room_index(array $rooms, array $me, string $type): void
+{
+    $open = array_filter($rooms, fn($r) => $r['status'] === 'active');
+    $count = ['all' => count($open), 'raid' => 0, 'donjon' => 0];
+    foreach ($open as $r) $count[room_is_raid($r) ? 'raid' : 'donjon']++;
+    echo '<nav class="tabs room-filter" aria-label="Type de salle">';
+    foreach (ROOM_FILTERS as $key => $label) {
+        echo '<a href="index.php?type=' . $key . '"' . ($key === $type ? ' aria-current="page"' : '') . '>' . e($label)
+            . ' <span class="tab-count">' . $count[$key] . '</span></a>';
+    }
+    echo '</nav>';
+    if ($type !== 'all') {
+        $rooms = array_filter($rooms, fn($r) => (room_is_raid($r) ? 'raid' : 'donjon') === $type);
+    }
+    render_room_list($rooms, $me, $type);
+}
+
+function render_room_list(array $rooms, array $me, string $type = 'all'): void
 {
     $active = array_filter($rooms, fn($r) => $r['status'] === 'active');
     $past = array_filter($rooms, fn($r) => $r['status'] !== 'active');
     if (!$active) {
-        echo '<div class="empty"><p>Aucune salle ouverte pour le moment.</p>';
-        if (can_create_room($me)) echo '<p><a class="btn btn-gold" href="room_new.php">Créer une salle</a></p>';
+        echo '<div class="empty"><p>' . match ($type) {
+            'raid'   => 'Aucun raid ouvert pour le moment.',
+            'donjon' => 'Aucun donjon ouvert pour le moment.',
+            default  => 'Aucune salle ouverte pour le moment.',
+        } . '</p>';
+        if (can_create_room($me)) {
+            echo '<p><a class="btn btn-gold" href="room_new.php' . ($type === 'donjon' ? '?kind=donjon' : '') . '">'
+                . ($type === 'donjon' ? 'Créer un donjon' : ($type === 'raid' ? 'Créer un raid' : 'Créer une salle')) . '</a></p>';
+        }
         echo '</div>';
     }
     foreach ($active as $room) {
