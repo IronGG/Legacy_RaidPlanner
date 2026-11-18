@@ -100,13 +100,18 @@ Envoie `seed/membres.json` sur le serveur juste pour l'import, puis supprime-le.
 | Donner ou retirer le rang de raid lead | Non | Non | Oui | Oui |
 | Retirer de la légion, réinitialiser l'accès | Non | Non | Membres et raid leads | Membres, raid leads et officiers |
 | Donner ou retirer le rang d'officier | Non | Non | Non | Oui |
+| Nommer d'autres chefs de légion | Non | Non | Non | Oui |
 
 Les rangs se changent dans le profil du membre, section **Permissions** (visible seulement des officiers ; on ne
-peut pas changer ses propres permissions). Un officier n'agit jamais sur un autre officier ni sur le chef de légion :
-pas de retrait de la légion, pas de code de réinitialisation (il permettrait de prendre le compte), pas de changement
-de rang. Il n'y a qu'un **chef de légion**, désigné en ligne de commande : `php bin/install.php Pseudo`. Lancée avec un
-autre pseudo, la commande transmet le rang (l'ancien chef reste officier) ; avec le sien, elle sert à retrouver
-l'accès, car personne ne peut réinitialiser celui du chef depuis le site.
+peut pas changer ses propres permissions). Un officier n'agit jamais sur un autre officier ni sur un chef de légion,
+et un chef n'agit pas sur un autre chef : pas de retrait de la légion, pas de code de réinitialisation (il permettrait
+de prendre le compte), pas de changement de rang.
+
+Il peut y avoir plusieurs **chefs de légion**. Le premier est désigné par `php bin/install.php Pseudo`. Ensuite, un chef
+en nomme d'autres depuis leur profil (bouton « Nommer chef de légion », avec confirmation) ; il garde son rang. Le membre
+doit avoir activé son profil. Retirer le rang d'un chef (il reste officier) se fait en SSH :
+`php bin/install.php --retirer Pseudo`, refusé pour le dernier chef. `php bin/install.php` avec son propre pseudo sert
+aussi à retrouver l'accès, car personne ne peut réinitialiser celui d'un chef depuis le site.
 
 Chaque membre porte le tag de son rang le plus élevé : « Chef de légion », « Officier » ou « Raid lead ». Helper,
 shot caller et « clear cette semaine » sont des choix du joueur, dans « Ce que je propose ».

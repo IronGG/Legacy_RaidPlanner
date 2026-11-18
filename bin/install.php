@@ -1,10 +1,12 @@
 <?php
-// Installation / chef de légion.
-// Usage : php bin/install.php [Pseudo]
+// Installation / chefs de légion.
+// Usage : php bin/install.php [Pseudo]           crée la base si besoin ; le pseudo devient chef de légion
+//         php bin/install.php --retirer Pseudo   retire le rang de chef de légion (le membre reste officier)
 //  - crée la base SQLite et importe seed/membres.json au premier lancement
-//  - si un pseudo est donné : le passe chef de légion et affiche un code d'activation pour définir son mot de passe.
-//    Il n'y a qu'un chef : l'ancien, s'il y en a un, reste officier. Relancer avec son propre pseudo sert aussi
-//    à retrouver l'accès, puisque personne d'autre ne peut réinitialiser celui du chef depuis le site.
+//  - avec un pseudo : le passe chef de légion (les autres chefs gardent leur rang) et affiche un code d'activation
+//    pour définir son mot de passe. Relancer avec son propre pseudo sert aussi à retrouver l'accès : personne ne
+//    peut réinitialiser celui d'un chef depuis le site.
+//  - --retirer : un chef ne peut pas retirer le rang d'un autre chef depuis le site, ça se fait ici.
 require __DIR__ . '/../src/bootstrap.php';
 
 if (PHP_SAPI !== 'cli') {
@@ -20,9 +22,23 @@ if (pepper_ensure()) {
 }
 pepper(); // vérifie que la clé est lisible
 
-$pseudo = trim($argv[1] ?? '');
+$remove = ($argv[1] ?? '') === '--retirer';
+$pseudo = trim($argv[$remove ? 2 : 1] ?? '');
 if ($pseudo === '') {
-    echo "Astuce : php bin/install.php TonPseudo  pour devenir chef de légion.\n";
+    echo $remove ? "Usage : php bin/install.php --retirer Pseudo\n" : "Astuce : php bin/install.php TonPseudo  pour devenir chef de légion.\n";
+    exit($remove ? 1 : 0);
+}
+if ($remove) {
+    $m = member_by_pseudo($pseudo);
+    if (!$m || !is_leader($m)) {
+        fwrite(STDERR, "$pseudo n'est pas chef de légion.\n");
+        exit(1);
+    }
+    if (!remove_leader($m)) {
+        fwrite(STDERR, "{$m['pseudo']} est le dernier chef de légion : nomme d'abord quelqu'un d'autre.\n");
+        exit(1);
+    }
+    echo "{$m['pseudo']} n'est plus chef de légion. Il ou elle reste officier.\n";
     exit(0);
 }
 if ($err = validate_pseudo($pseudo)) {
@@ -35,13 +51,10 @@ if (!$m) {
     $m = member_by_pseudo($pseudo);
     echo "Profil « {$m['pseudo']} » créé.\n";
 }
-$previous = q('SELECT pseudo FROM members WHERE is_leader = 1 AND id <> ?', [$m['id']])->fetchAll(PDO::FETCH_COLUMN);
-q('UPDATE members SET is_leader = 0, is_officer = 1 WHERE is_leader = 1 AND id <> ?', [$m['id']]);
-q('UPDATE members SET is_leader = 1, is_officer = 1, verifie = 1 WHERE id = ?', [$m['id']]);
+make_leader($m);
+q('UPDATE members SET verifie = 1 WHERE id = ?', [$m['id']]);
 $code = issue_activation_code((int) $m['id']);
-echo "{$m['pseudo']} est chef de légion.\n";
-if ($previous) {
-    echo "Ancien chef de légion, qui reste officier : " . implode(', ', $previous) . "\n";
-}
+$leaders = q('SELECT pseudo FROM members WHERE is_leader = 1 ORDER BY pseudo COLLATE NOCASE')->fetchAll(PDO::FETCH_COLUMN);
+echo "{$m['pseudo']} est chef de légion. Chefs de légion : " . implode(', ', $leaders) . "\n";
 echo "Code d'activation (7 jours) : $code\n";
 echo "Ouvre activate.php?pseudo=" . rawurlencode($m['pseudo']) . " dans le navigateur pour choisir ton mot de passe.\n";

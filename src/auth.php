@@ -98,8 +98,9 @@ function require_login(): array
 
 /*
  * Permissions, du rang le plus haut au plus bas :
- *  - Chef de légion : tout ce que fait un officier, plus donner ou retirer le rang d'officier et agir sur les
- *    officiers (les retirer de la légion, réinitialiser leur accès). Un seul, désigné par bin/install.php.
+ *  - Chef de légion : tout ce que fait un officier, plus donner ou retirer le rang d'officier, agir sur les
+ *    officiers (les retirer de la légion, réinitialiser leur accès) et nommer d'autres chefs. Il peut y en avoir
+ *    plusieurs ; aucun n'agit sur un autre chef (retirer le rang : php bin/install.php --retirer Pseudo).
  *  - Officier : salles, membres, accès, listes du site. N'agit que sur les membres de rang inférieur au sien.
  *  - Raid lead : gère toutes les salles et consulte les profils des membres, sans rien modifier.
  */
@@ -140,17 +141,35 @@ function rank_level(array $m): int
 /**
  * Agir sur un autre membre : le retirer de la légion, réinitialiser son accès, changer son rang de raid lead.
  * Réservé aux officiers, et seulement sur un rang inférieur au sien : un officier n'agit ni sur un autre
- * officier ni sur le chef de légion.
+ * officier ni sur un chef de légion, et un chef n'agit pas sur un autre chef.
  */
 function can_act_on(array $me, array $m): bool
 {
     return is_officer($me) && (int) $me['id'] !== (int) $m['id'] && rank_level($me) > rank_level($m);
 }
 
-/** Donner ou retirer le rang d'officier : le chef de légion seul. */
+/** Donner ou retirer le rang d'officier : un chef de légion. */
 function can_grant_officer(array $me, array $m): bool
 {
     return is_leader($me) && can_act_on($me, $m);
+}
+
+/** Nomme ce membre chef de légion. Les autres chefs gardent leur rang. */
+function make_leader(array $m): void
+{
+    q('UPDATE members SET is_leader = 1, is_officer = 1, updated_at = ? WHERE id = ?', [time(), $m['id']]);
+}
+
+/** Retire le rang de chef de légion (le membre reste officier). Refusé s'il est le dernier chef. */
+function remove_leader(array $m): bool
+{
+    return tx(function () use ($m) {
+        if ((int) q('SELECT COUNT(*) FROM members WHERE is_leader = 1 AND id <> ?', [$m['id']])->fetchColumn() === 0) {
+            return false;
+        }
+        q('UPDATE members SET is_leader = 0, is_officer = 1, updated_at = ? WHERE id = ?', [time(), $m['id']]);
+        return true;
+    });
 }
 
 function require_officer(): array
