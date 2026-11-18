@@ -16,9 +16,9 @@ Petite app web PHP pour organiser les raids de la légion, construite à partir 
 
 | Phase | Ce qui se passe |
 |---|---|
-| Inscriptions ouvertes (compte à rebours) | On rejoint le groupe s'il reste une place, sinon la réserve. |
-| Remplacements (délai passé) | La salle reste ouverte. Si quelqu'un part, le premier de la réserve monte. S'il n'y a personne en réserve, n'importe qui peut prendre la place libre (badge « Remplaçant »). La réserve n'accepte plus de nouveaux. |
-| Terminée / annulée | Le chef de salle (ou un officier) clique « Clear réussi » (les titulaires passent « clear cette semaine »), « Finir sans clear » ou « Annuler ». Sans action, la salle s'archive 12 h après le départ. |
+| Inscriptions ouvertes (compte à rebours : 15 min à 7 jours, liste dans `config.php`) | On rejoint une place libre réservée à son rôle, sinon une place « Tous rôles », sinon la réserve. |
+| Remplacements (délai passé) | La salle reste ouverte. Si quelqu'un part, le premier réserviste dont le rôle convient à la place monte. S'il n'y a personne en réserve, n'importe qui peut prendre la place libre (badge « Remplaçant »). La réserve n'accepte plus de nouveaux. |
+| Terminée / annulée | Le chef de salle (ou un officier) clique « Clear réussi » (les titulaires passent « clear cette semaine »), « Finir sans clear » ou « Annuler ». Sans action, la salle s'archive 12 h après le départ, jamais tant que les inscriptions sont ouvertes. |
 
 Autres règles (reprises de l'Excel) :
 - un joueur déjà clear cette semaine ne peut pas rejoindre, sauf si la salle accepte les helpers ;
@@ -26,6 +26,14 @@ Autres règles (reprises de l'Excel) :
 - GS minimum facultatif par salle ;
 - un joueur n'est que dans une salle active à la fois (réglable dans `config.php`) ;
 - le chef peut prolonger / rouvrir 30 min, clore les inscriptions, passer quelqu'un en réserve, le remonter, le retirer.
+
+### Places du groupe
+
+Le chef de salle et les officiers cliquent sur « Changer le rôle » sous une place libre pour choisir le rôle recherché (Tank, Soin…) ou « Tous rôles ». Seuls les joueurs de ce rôle peuvent prendre la place ; les autres vont en réserve et montent automatiquement dès qu'une place pour leur rôle s'ouvre (départ, ou rôle de place changé).
+
+On peut aussi s'inscrire volontairement en réserve (« M'inscrire en réserve », pendant les inscriptions), ou laisser sa place du groupe (« Passer en réserve »). Un réserviste volontaire ne monte jamais automatiquement : il clique lui-même sur « Rejoindre le groupe », ou le chef le fait monter. Un joueur arrivé en réserve faute de place peut aussi choisir « Ne pas monter automatiquement ».
+
+Pour déplacer quelqu'un : glisser-déposer, ou clic sur le joueur puis clic sur la place (marche au téléphone). Sur une place occupée, les deux joueurs échangent. Sur la réserve, le joueur y passe. Un chef peut forcer un joueur sur une place d'un autre rôle : il garde un badge « Place X » pour que ça se voie. Échap annule une sélection.
 
 ## Lancer l'app
 
@@ -56,6 +64,19 @@ php -S localhost:8080 -t public
 
 Sur un hébergement PHP classique : la racine web doit pointer sur `public/`. Les dossiers `src/`, `data/`, `seed/`
 et `bin/` contiennent aussi un `.htaccess` qui bloque l'accès si ce n'est pas possible.
+
+## Importer le recensement de l'Excel
+
+`seed/membres.json` (hors git) contient les membres de l'Excel. Il est importé tout seul à la création de la base.
+Pour l'importer dans une base qui existe déjà (par exemple sur le serveur), en SSH :
+
+```bash
+php bin/import.php --dry-run   # montre ce qui sera ajouté
+php bin/import.php             # ajoute les membres absents, sans toucher aux comptes existants
+php bin/sync.php               # lie leurs personnages en jeu (GS, CP, classe)
+```
+
+Envoie `seed/membres.json` sur le serveur juste pour l'import, puis supprime-le.
 
 ## Premiers pas
 
@@ -119,7 +140,12 @@ Le site ne propose volontairement aucun téléchargement de la base : on la réc
   (sans visite, rien ne change dans la base, donc rien à sauvegarder). L'espace Officiers affiche la dernière.
 - **Manuelle**, en SSH : `php bin/backup.php` crée `data/backups/manuel-….sqlite`, jamais effacée automatiquement.
 - Ces copies sont sur le même serveur : télécharge-en une de temps en temps (SFTP) pour en avoir une ailleurs.
-- Restaurer : remplace `data/guildraid.sqlite` sur le serveur (SFTP) par une sauvegarde.
+- Restaurer : remplace `data/guildraid.sqlite` sur le serveur (SFTP) par une sauvegarde. Il faut aussi le même
+  `data/pepper.php` qu'au moment de la sauvegarde.
+- **La clé de poivre `data/pepper.php`** est créée par `php bin/install.php` (ou au premier compte). Elle n'est
+  volontairement dans aucune sauvegarde : récupère-la une fois par SFTP et garde-la à part (gestionnaire de mots de
+  passe). Sans elle, plus aucun mot de passe ni code d'activation ne marche : il faudrait repartir d'une base vide.
+  Ne la modifie jamais. Ne l'envoie pas d'un PC vers le serveur : chaque installation a la sienne.
 - Mettre à jour l'app : remplace tous les fichiers **sauf** `data/` et `public/assets/classes/custom/`. Les évolutions
   de la base se font toutes seules au premier chargement.
 
@@ -136,11 +162,13 @@ public/               pages web (racine du site) + assets
 
 ## Sécurité en place
 
-Mots de passe hachés (`password_hash`), jeton CSRF sur tous les formulaires, requêtes préparées, échappement HTML,
+Mots de passe salés et poivrés : HMAC-SHA256 avec une clé secrète (le poivre, dans `data/pepper.php`, hors de la base),
+puis bcrypt (`password_hash`, sel aléatoire par mot de passe). Une copie de la base seule (fuite, sauvegarde égarée)
+ne permet pas de tester des mots de passe. Codes d'activation à usage unique, valables 7 jours, stockés eux aussi
+en HMAC avec le poivre. Jeton CSRF sur tous les formulaires, requêtes préparées, échappement HTML,
 Content-Security-Policy stricte (pas de script inline), cookies `HttpOnly` / `SameSite=Lax` (et `Secure` en HTTPS),
-limitation des tentatives de connexion par IP, codes d'activation à usage unique stockés hachés, verrou
-d'écriture SQLite pour qu'une salle ne dépasse jamais sa capacité, export CSV protégé contre l'injection de formules.
-En production, mets l'app derrière HTTPS (reverse proxy).
+limitation des tentatives de connexion par IP, verrou d'écriture SQLite pour qu'une salle ne dépasse jamais sa capacité,
+aucun téléchargement de la base depuis le site. En production, mets l'app derrière HTTPS.
 
 ## Pistes pour aller plus loin
 

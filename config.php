@@ -7,12 +7,14 @@ return [
 
     // Base SQLite (créée automatiquement au premier lancement) et import initial des membres
     'db_path'   => __DIR__ . '/data/guildraid.sqlite',
+    // Clé secrète (poivre) des mots de passe : créée toute seule, hors de la base. À sauvegarder à part.
+    'pepper_path' => __DIR__ . '/data/pepper.php',
     'seed_path' => __DIR__ . '/seed/membres.json',
 
     // Valeurs par défaut proposées à la création d'une salle
     'default_capacity'    => 10,
     'default_reserve'     => 8,
-    'join_windows'        => [15 => '15 min', 30 => '30 min', 60 => '1 h', 120 => '2 h', 180 => '3 h', 360 => '6 h', 1440 => '24 h'],
+    'join_windows'        => [15 => '15 min', 30 => '30 min', 60 => '1 h', 120 => '2 h', 180 => '3 h', 360 => '6 h', 1440 => '24 h', 4320 => '3 jours', 10080 => '7 jours'],
     'default_join_window' => 30,
 
     // Un joueur ne peut être que dans une seule salle active à la fois (comme une room de jeu)

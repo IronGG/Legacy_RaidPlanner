@@ -17,7 +17,7 @@ if (is_post()) {
         $error = $err;
     } else {
         q('UPDATE members SET password_hash = ?, activation_hash = NULL, activation_expires = NULL, updated_at = ? WHERE id = ?',
-            [password_hash($pw, PASSWORD_DEFAULT), time(), $m['id']]);
+            [pw_hash($pw), time(), $m['id']]);
         login_member(member_by_id((int) $m['id']));
         flash('ok', 'Profil activé. Vérifie que tes infos sont à jour.');
         if (aion_enabled() && ($m['sync_status'] ?? '') !== 'ok') {

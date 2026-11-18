@@ -12,6 +12,11 @@ if (PHP_SAPI !== 'cli') {
 db();
 $count = (int) q('SELECT COUNT(*) FROM members')->fetchColumn();
 echo "Base prête : " . cfg('db_path') . " ($count membres)\n";
+if (pepper_ensure()) {
+    echo "Clé de poivre des mots de passe créée : " . pepper_path() . "\n";
+    echo "  -> Garde-en une copie à part (gestionnaire de mots de passe). Sans elle, plus personne ne peut se connecter.\n";
+}
+pepper(); // vérifie que la clé est lisible
 
 $pseudo = trim($argv[1] ?? '');
 if ($pseudo === '') {

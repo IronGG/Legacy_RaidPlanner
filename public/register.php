@@ -20,7 +20,7 @@ if (is_post()) {
     if (!$errors) {
         $now = time();
         q('INSERT INTO members (pseudo, password_hash, classe, role, created_at, updated_at) VALUES (?,?,?,?,?,?)',
-            [$v['pseudo'], password_hash($pw, PASSWORD_DEFAULT), $v['classe'], $v['role'], $now, $now]);
+            [$v['pseudo'], pw_hash($pw), $v['classe'], $v['role'], $now, $now]);
         $created = member_by_pseudo($v['pseudo']);
         login_member($created);
         flash('ok', 'Bienvenue ! Complète ton profil pour que les chefs de salle te connaissent.');

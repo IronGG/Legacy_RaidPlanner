@@ -25,10 +25,10 @@ if (is_post() && ($_POST['form'] ?? '') === 'delete' && $isOfficer && !$self) {
 
 if (is_post() && ($_POST['form'] ?? '') === 'password' && $self) {
     $new = (string) ($_POST['new_password'] ?? '');
-    if (!password_verify((string) ($_POST['current_password'] ?? ''), (string) $m['password_hash'])) $errors[] = 'Mot de passe actuel incorrect.';
+    if (!pw_verify((string) ($_POST['current_password'] ?? ''), (string) $m['password_hash'])) $errors[] = 'Mot de passe actuel incorrect.';
     elseif ($err = validate_password($new)) $errors[] = $err;
     else {
-        q('UPDATE members SET password_hash = ?, updated_at = ? WHERE id = ?', [password_hash($new, PASSWORD_DEFAULT), time(), $m['id']]);
+        q('UPDATE members SET password_hash = ?, updated_at = ? WHERE id = ?', [pw_hash($new), time(), $m['id']]);
         login_member(member_by_id((int) $m['id'])); // garde cette session, invalide les autres
         flash('ok', 'Mot de passe changé.');
         redirect($selfUrl);

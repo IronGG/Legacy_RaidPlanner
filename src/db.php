@@ -146,6 +146,39 @@ function migrate(PDO $pdo): void
         $pdo->exec('PRAGMA user_version = 3');
         $pdo->exec('COMMIT');
     }
+    if ($version < 4) {
+        // v4 : places numérotées dans le groupe, avec un rôle recherché par place (NULL = tous rôles)
+        $pdo->exec('BEGIN IMMEDIATE');
+        $pdo->exec(<<<SQL
+            CREATE TABLE room_slots (
+                room_id  INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                position INTEGER NOT NULL,
+                role     TEXT,
+                PRIMARY KEY (room_id, position)
+            );
+            ALTER TABLE room_members ADD COLUMN position INTEGER;
+        SQL);
+        foreach ($pdo->query('SELECT id, capacity FROM rooms')->fetchAll() as $r) {
+            for ($i = 0; $i < (int) $r['capacity']; $i++) {
+                $pdo->prepare('INSERT INTO room_slots (room_id, position) VALUES (?, ?)')->execute([$r['id'], $i]);
+            }
+            $mains = $pdo->prepare("SELECT member_id FROM room_members WHERE room_id = ? AND slot = 'main' ORDER BY slot_since, rowid");
+            $mains->execute([$r['id']]);
+            foreach ($mains->fetchAll(PDO::FETCH_COLUMN) as $i => $mid) {
+                $pdo->prepare('UPDATE room_members SET position = ? WHERE room_id = ? AND member_id = ?')->execute([$i, $r['id'], $mid]);
+            }
+        }
+        $pdo->exec('CREATE UNIQUE INDEX room_members_position ON room_members(room_id, position) WHERE position IS NOT NULL');
+        $pdo->exec('PRAGMA user_version = 4');
+        $pdo->exec('COMMIT');
+    }
+    if ($version < 5) {
+        // Réserve volontaire : le joueur ne monte pas automatiquement dans le groupe
+        $pdo->exec('BEGIN IMMEDIATE');
+        $pdo->exec('ALTER TABLE room_members ADD COLUMN voluntary INTEGER NOT NULL DEFAULT 0');
+        $pdo->exec('PRAGMA user_version = 5');
+        $pdo->exec('COMMIT');
+    }
 }
 
 /** Remplit les listes avec les valeurs de l'Excel, plus toute valeur déjà utilisée en base. */
@@ -160,6 +193,8 @@ function seed_options(PDO $pdo): void
                 ($list === 'role' && in_array($v, DEFAULT_REQUIRED_ROLES, true)) ? 1 : 0, time()]);
         }
         foreach (OPTION_LISTS[$list]['columns'] as [$table, $col]) {
+            // Table créée par une migration plus récente : rien à reprendre pour l'instant
+            if (!$pdo->query('SELECT 1 FROM sqlite_master WHERE type = \'table\' AND name = ' . $pdo->quote($table))->fetchColumn()) continue;
             foreach ($pdo->query("SELECT DISTINCT $col FROM $table WHERE $col IS NOT NULL AND $col <> ''")->fetchAll(PDO::FETCH_COLUMN) as $v) {
                 $st->execute([$list, $v, $pos++, $list === 'classe' ? FALLBACK_ICON : null, null, 0, time()]);
             }

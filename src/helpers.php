@@ -119,10 +119,21 @@ function fmt_time(mixed $ts): string
     return $ts ? local_dt((int) $ts)->format('H:i') : '';
 }
 
+/** Heure seule si c'est aujourd'hui, sinon jour et heure (salles ouvertes plusieurs jours). $short : « 18/11 15:38 ». */
+function fmt_when(mixed $ts, bool $short = false): string
+{
+    if (!$ts) return '';
+    if (local_dt((int) $ts)->format('Y-m-d') === local_dt(time())->format('Y-m-d')) return fmt_time($ts);
+    return $short ? local_dt((int) $ts)->format('d/m H:i') : fmt_dt($ts);
+}
+
 /** Durée restante lisible côté serveur (le JS prend le relais à la seconde). */
 function fmt_left(int $secs): string
 {
     $secs = max(0, $secs);
+    if ($secs >= 86400) {
+        return intdiv($secs, 86400) . ' j ' . intdiv($secs % 86400, 3600) . ' h';
+    }
     $h = intdiv($secs, 3600);
     $m = intdiv($secs % 3600, 60);
     $s = $secs % 60;

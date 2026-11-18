@@ -124,16 +124,93 @@ function after_login_url(): string
     return (str_starts_with($url, '/') && !str_starts_with($url, '//') && !str_contains($url, '\\')) ? $url : 'index.php';
 }
 
+/*
+ * Poivre : clé secrète gardée hors de la base (data/pepper.php). Chaque mot de passe passe dans un HMAC-SHA256
+ * avec cette clé avant bcrypt (password_hash, avec son sel). Une copie de la base seule ne permet donc pas de
+ * tester des mots de passe. Sans ce fichier, plus personne ne peut se connecter : il faut en garder une copie.
+ */
+function pepper_path(): string
+{
+    return (string) (cfg('pepper_path') ?: __DIR__ . '/../data/pepper.php');
+}
+
+function pepper_fail(string $msg): never
+{
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, $msg . "\n");
+        exit(1);
+    }
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    exit("Configuration incomplète : la clé de sécurité des mots de passe est introuvable ou invalide.\nUn officier doit restaurer data/pepper.php (voir le README, section Sauvegarde).");
+}
+
+/** Crée la clé si elle n'existe pas encore. Renvoie true si elle vient d'être créée. */
+function pepper_ensure(): bool
+{
+    $path = pepper_path();
+    if (is_file($path)) return false;
+    // Des comptes existent déjà : une nouvelle clé les rendrait tous inutilisables. On refuse.
+    if ((int) q('SELECT EXISTS(SELECT 1 FROM members WHERE password_hash IS NOT NULL OR activation_hash IS NOT NULL)')->fetchColumn()) {
+        pepper_fail('Clé de poivre introuvable (' . $path . ") alors que des comptes existent déjà.\n"
+            . "Restaure la copie de data/pepper.php, ou repars d'une base vide.");
+    }
+    if (!is_dir(dirname($path))) mkdir(dirname($path), 0700, true);
+    $fh = @fopen($path, 'x'); // 'x' : échoue si une autre requête vient de la créer
+    if ($fh === false) return false;
+    $key = base64_encode(random_bytes(32));
+    fwrite($fh, "<?php\n// Poivre des mots de passe de GuildRaid. NE PAS MODIFIER NI SUPPRIMER : sans cette clé, plus personne\n"
+        . "// ne peut se connecter. Garde-en une copie à part (gestionnaire de mots de passe), pas avec les sauvegardes.\n"
+        . "return '$key';\n");
+    fclose($fh);
+    @chmod($path, 0600);
+    return true;
+}
+
+function pepper(): string
+{
+    static $key = null;
+    if ($key !== null) return $key;
+    pepper_ensure();
+    $path = pepper_path();
+    $raw = is_file($path) ? (static fn(string $f): mixed => require $f)($path) : null;
+    $bin = is_string($raw) ? base64_decode($raw, true) : false;
+    if ($bin === false || strlen($bin) < 32) pepper_fail('Clé de poivre invalide : ' . $path);
+    return $key = $bin;
+}
+
+/** Mot de passe poivré, encodé en base64 (44 caractères : sous la limite de 72 octets de bcrypt, sans octet nul). */
+function pw_peppered(string $password): string
+{
+    return base64_encode(hash_hmac('sha256', $password, pepper(), true));
+}
+
+function pw_hash(string $password): string
+{
+    return password_hash(pw_peppered($password), PASSWORD_DEFAULT);
+}
+
+function pw_verify(string $password, string $hash): bool
+{
+    return password_verify(pw_peppered($password), $hash);
+}
+
 function attempt_login(string $pseudo, string $password): ?array
 {
     $m = member_by_pseudo($pseudo);
     $hash = $m['password_hash'] ?? null;
     if (!$hash) {
         // Même coût de calcul que pour un vrai compte : ne révèle pas quels pseudos sont activés
-        password_verify($password, '$2y$10$H0uYxyI4MukluN8kJyCH9u1s9MUECUa2p48nxkH6bU3p61N1aebrO');
+        pw_verify($password, '$2y$10$H0uYxyI4MukluN8kJyCH9u1s9MUECUa2p48nxkH6bU3p61N1aebrO');
         return null;
     }
-    return password_verify($password, $hash) ? $m : null;
+    if (!pw_verify($password, $hash)) return null;
+    if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
+        // Coût de bcrypt relevé par une version plus récente de PHP : on met l'empreinte à niveau
+        q('UPDATE members SET password_hash = ? WHERE id = ?', [pw_hash($password), $m['id']]);
+        $m = member_by_id((int) $m['id']);
+    }
+    return $m;
 }
 
 function rate_limited(): bool
@@ -161,7 +238,7 @@ function validate_pseudo(string $pseudo): ?string
     return null;
 }
 
-/** Code d'activation à usage unique, transmis par un officier (Discord, MP…). Seul son hash est stocké. */
+/** Code d'activation à usage unique, transmis par un officier (Discord, MP…). Seule son empreinte est stockée. */
 function issue_activation_code(int $memberId): string
 {
     $alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -170,7 +247,7 @@ function issue_activation_code(int $memberId): string
         $code .= $alphabet[random_int(0, strlen($alphabet) - 1)];
     }
     q('UPDATE members SET activation_hash = ?, activation_expires = ? WHERE id = ?',
-        [hash('sha256', $code), time() + ACTIVATION_TTL, $memberId]);
+        [code_hash($code), time() + ACTIVATION_TTL, $memberId]);
     return substr($code, 0, 5) . '-' . substr($code, 5);
 }
 
@@ -178,5 +255,11 @@ function check_activation_code(array $m, string $code): bool
 {
     $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $code) ?? '');
     return $m['activation_hash'] && (int) $m['activation_expires'] > time()
-        && hash_equals((string) $m['activation_hash'], hash('sha256', $code));
+        && hash_equals((string) $m['activation_hash'], code_hash($code));
+}
+
+/** Empreinte d'un code d'activation (HMAC avec le poivre : la base seule ne permet pas de les retrouver). */
+function code_hash(string $code): string
+{
+    return hash_hmac('sha256', $code, pepper());
 }

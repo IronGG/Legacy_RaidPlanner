@@ -128,3 +128,22 @@ function option_delete(string $list, int $id): string
         return "« {$o['value']} » supprimé.";
     });
 }
+
+/** Ajoute aux listes toute valeur utilisée par un profil ou une salle mais absente des listes (après un import). */
+function options_add_used_values(): int
+{
+    $added = 0;
+    foreach (OPTION_LISTS as $list => $def) {
+        $pos = (int) q('SELECT COALESCE(MAX(position), -1) + 1 FROM options WHERE list = ?', [$list])->fetchColumn();
+        foreach ($def['columns'] as [$table, $col]) {
+            foreach (q("SELECT DISTINCT $col FROM $table WHERE $col IS NOT NULL AND $col <> ''")->fetchAll(PDO::FETCH_COLUMN) as $v) {
+                $n = q('INSERT OR IGNORE INTO options (list, value, position, icon, updated_at) VALUES (?,?,?,?,?)',
+                    [$list, $v, $pos, $list === 'classe' ? FALLBACK_ICON : null, time()])->rowCount();
+                $pos += $n;
+                $added += $n;
+            }
+        }
+    }
+    all_options(true);
+    return $added;
+}
