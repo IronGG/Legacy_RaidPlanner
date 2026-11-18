@@ -63,7 +63,9 @@ et `bin/` contiennent aussi un `.htaccess` qui bloque l'accès si ce n'est pas p
 2. Active ton compte avec ce code, puis va dans **Officiers**.
 3. Pour chaque membre importé, clique **Générer un code** et envoie-le en MP sur Discord avec le lien de
    `activate.php`. Les nouveaux joueurs peuvent aussi s'inscrire eux-mêmes via **S'inscrire**.
-4. Chaque semaine, au reset du jeu : **Officiers > Faire le reset hebdomadaire**.
+4. Le reset hebdomadaire (« clear cette semaine » remis à non pour tous) est automatique chaque mercredi à 10:00
+   (`weekly_reset_day` et `weekly_reset_time` dans `config.php`). **Officiers > Faire le reset maintenant** reste
+   disponible au besoin.
 
 ## Personnaliser
 

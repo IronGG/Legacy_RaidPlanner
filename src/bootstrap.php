@@ -13,6 +13,7 @@ require __DIR__ . '/options.php';
 require __DIR__ . '/aion.php';
 require __DIR__ . '/backup.php';
 require __DIR__ . '/background.php';
+require __DIR__ . '/weekly.php';
 require __DIR__ . '/view.php';
 require __DIR__ . '/room_view.php';
 
@@ -27,5 +28,7 @@ if (PHP_SAPI !== 'cli') {
         if (is_post()) {
             csrf_check();
         }
+        // Avant tout traitement, pour que la page et les inscriptions voient déjà la nouvelle semaine
+        weekly_reset_if_due();
     }
 }

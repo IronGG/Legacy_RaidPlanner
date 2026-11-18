@@ -255,3 +255,15 @@ function legion_stats(): array
     }
     return ['total' => (int) $s['total'], 'cleared' => (int) $s['cleared'], 'ready' => (int) $s['ready'], 'roles' => $roles];
 }
+
+/** Petites valeurs persistantes (horodatages des tâches automatiques). */
+function kv_get(string $key, string $default = ''): string
+{
+    $v = q('SELECT value FROM kv WHERE key = ?', [$key])->fetchColumn();
+    return $v === false ? $default : (string) $v;
+}
+
+function kv_set(string $key, string $value): void
+{
+    q('INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', [$key, $value]);
+}

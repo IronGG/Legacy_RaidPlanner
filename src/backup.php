@@ -12,17 +12,6 @@ function backup_dir(): string
     return APP_ROOT . '/data/backups';
 }
 
-function kv_get(string $key, string $default = ''): string
-{
-    $v = q('SELECT value FROM kv WHERE key = ?', [$key])->fetchColumn();
-    return $v === false ? $default : (string) $v;
-}
-
-function kv_set(string $key, string $value): void
-{
-    q('INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', [$key, $value]);
-}
-
 /** Copie cohérente de la base (même pendant une écriture). Retourne le chemin du fichier créé. */
 function db_backup(string $prefix = 'auto', ?string $dest = null): string
 {

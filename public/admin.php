@@ -52,10 +52,16 @@ admin_tabs('admin');
 
 <section class="panel">
     <h2>Reset hebdomadaire</h2>
-    <p><?= $stats['cleared'] ?> joueur<?= $stats['cleared'] > 1 ? 's ont' : ' a' ?> clear cette semaine. Au reset du jeu, remets tout le monde à « pas encore clear » pour qu'ils puissent rejoindre les salles.</p>
+    <p><?= $stats['cleared'] ?> joueur<?= $stats['cleared'] > 1 ? 's ont' : ' a' ?> clear cette semaine.
+      <?php if (weekly_reset_enabled()): ?>
+        Tout le monde repasse automatiquement à « pas encore clear » chaque semaine. Prochain reset : <?= e(fmt_dt(weekly_reset_next())) ?>.
+      <?php else: ?>
+        Au reset du jeu, remets tout le monde à « pas encore clear » pour qu'ils puissent rejoindre les salles.
+      <?php endif; ?></p>
+    <?php if (weekly_reset_enabled() && kv_get('weekly_reset_info') !== ''): ?><p class="muted small">Dernier reset automatique : <?= e(kv_get('weekly_reset_info')) ?>.</p><?php endif; ?>
     <form method="post" data-confirm="Remettre « clear cette semaine » à non pour toute la légion ?">
       <?= csrf_field() ?><input type="hidden" name="form" value="weekly_reset">
-      <button class="btn btn-gold" type="submit">Faire le reset hebdomadaire</button>
+      <button class="btn <?= weekly_reset_enabled() ? 'btn-ghost' : 'btn-gold' ?>" type="submit">Faire le reset maintenant</button>
     </form>
 </section>
 

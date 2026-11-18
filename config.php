@@ -28,6 +28,10 @@ return [
     // Fréquence de rafraîchissement des salles dans le navigateur (ms)
     'poll_ms' => 4000,
 
+    // Reset hebdomadaire automatique des « clear cette semaine » (heure locale, fuseau ci-dessus)
+    'weekly_reset_day'  => 3,        // 1 = lundi … 7 = dimanche (3 = mercredi) ; 0 pour désactiver
+    'weekly_reset_time' => '10:00',
+
     // Sauvegardes automatiques de la base dans data/backups/ (hors du site : à récupérer par SFTP)
     'backup_every_hours' => 12,   // 0 pour désactiver
     'backup_keep'        => 14,   // sauvegardes automatiques conservées (14 × 12 h = 7 jours)
