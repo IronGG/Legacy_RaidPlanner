@@ -49,7 +49,7 @@ function page_header(string $title, string $active = '', bool $wide = false): vo
 function page_footer(): void
 {
     echo "</main>\n</body>\n</html>\n";
-    aion_background_tick();
+    background_tasks();
 }
 
 function select_field(string $name, array $options, ?string $current, string $empty = ''): string

@@ -11,6 +11,8 @@ require __DIR__ . '/auth.php';
 require __DIR__ . '/rooms.php';
 require __DIR__ . '/options.php';
 require __DIR__ . '/aion.php';
+require __DIR__ . '/backup.php';
+require __DIR__ . '/background.php';
 require __DIR__ . '/view.php';
 require __DIR__ . '/room_view.php';
 

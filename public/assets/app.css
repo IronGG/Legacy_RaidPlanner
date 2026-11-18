@@ -295,6 +295,7 @@ td.synced::after { content: ""; display: inline-block; width: 5px; height: 5px; 
 .ok-mark { color: var(--sage); }
 
 /* Officiers */
+code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .9em; color: var(--parchment); background: var(--abyss-3); padding: .05rem .35rem; border-radius: 4px; }
 .tabs { display: flex; flex-wrap: wrap; gap: .25rem 1.4rem; margin: 0 0 1.5rem; border-bottom: 1px solid var(--rule); }
 .tabs a { padding: .5rem 0; color: var(--mist); text-decoration: none; }
 .tabs a:hover { color: var(--parchment); }

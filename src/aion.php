@@ -242,21 +242,12 @@ function aion_sync_batch(int $max, float $budgetSeconds, bool $all = false, ?cal
     return $sum;
 }
 
-/**
- * Actualisation en arrière-plan, sans tâche planifiée : au plus un petit lot toutes les 10 minutes,
- * lancé après l'envoi d'une page (PHP-FPM, comme chez Infomaniak). Le visiteur n'attend pas.
- */
-function aion_background_tick(): void
+/** Au plus un petit lot de relectures toutes les 10 minutes (voir background_tasks()). */
+function aion_claim_tick(): bool
 {
-    if (!aion_enabled() || PHP_SAPI === 'cli' || !function_exists('fastcgi_finish_request')) return;
+    if (!aion_enabled()) return false;
     $now = time();
-    $claimed = q("UPDATE kv SET value = ? WHERE key = 'aion_tick' AND CAST(value AS INTEGER) < ?", [(string) $now, $now - 600])->rowCount();
-    if (!$claimed) return;
-    register_shutdown_function(function () {
-        if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
-        fastcgi_finish_request();
-        aion_sync_batch(5, 15.0);
-    });
+    return q("UPDATE kv SET value = ? WHERE key = 'aion_tick' AND CAST(value AS INTEGER) < ?", [(string) $now, $now - 600])->rowCount() === 1;
 }
 
 function aion_stats(): array

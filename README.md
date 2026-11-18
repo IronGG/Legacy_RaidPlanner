@@ -111,8 +111,12 @@ Tout est dans un seul fichier : `data/guildraid.sqlite` (membres, comptes avec l
 listes, journal). Les réglages restent dans `config.php`, les icônes envoyées dans `public/assets/classes/custom/`.
 Le site ne propose volontairement aucun téléchargement de la base : on la récupère par SSH/SFTP.
 
-- Faire une copie cohérente (même si des joueurs utilisent le site à ce moment-là), en SSH :
-  `php bin/backup.php` crée `data/backup-AAAA-MM-JJ-HHMM.sqlite`. Télécharge-la en SFTP, puis supprime-la du serveur.
+- **Automatique** : toutes les 12 h, une copie dans `data/backups/auto-AAAA-MM-JJ-HHMMSS.sqlite`. Les 14 dernières
+  sont gardées (7 jours), les plus anciennes effacées. Réglages `backup_every_hours` et `backup_keep` dans `config.php`.
+  Pas de tâche planifiée : la sauvegarde se fait après l'affichage d'une page quand 12 h se sont écoulées
+  (sans visite, rien ne change dans la base, donc rien à sauvegarder). L'espace Officiers affiche la dernière.
+- **Manuelle**, en SSH : `php bin/backup.php` crée `data/backups/manuel-….sqlite`, jamais effacée automatiquement.
+- Ces copies sont sur le même serveur : télécharge-en une de temps en temps (SFTP) pour en avoir une ailleurs.
 - Restaurer : remplace `data/guildraid.sqlite` sur le serveur (SFTP) par une sauvegarde.
 - Mettre à jour l'app : remplace tous les fichiers **sauf** `data/` et `public/assets/classes/custom/`. Les évolutions
   de la base se font toutes seules au premier chargement.

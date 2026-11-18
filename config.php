@@ -28,6 +28,10 @@ return [
     // Fréquence de rafraîchissement des salles dans le navigateur (ms)
     'poll_ms' => 4000,
 
+    // Sauvegardes automatiques de la base dans data/backups/ (hors du site : à récupérer par SFTP)
+    'backup_every_hours' => 12,   // 0 pour désactiver
+    'backup_keep'        => 14,   // sauvegardes automatiques conservées (14 × 12 h = 7 jours)
+
     // Lecture automatique du GS (niveau d'objet) et du CP depuis le site officiel d'AION 2
     'aion_sync'          => true,
     'aion_region'        => 'eu',     // nae, naw, eu, la ou as

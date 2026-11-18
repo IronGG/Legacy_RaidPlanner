@@ -34,6 +34,7 @@ unset($_SESSION['last_code']);
 $members = q('SELECT id, pseudo, classe, password_hash IS NOT NULL AS active, activation_expires FROM members ORDER BY active, pseudo COLLATE NOCASE')->fetchAll();
 $stats = legion_stats();
 $aion = aion_stats();
+$backups = backup_status();
 $aionIssues = q("SELECT id, pseudo, perso, classe, sync_status, sync_message FROM members WHERE sync_status IN ('not_found', 'error') ORDER BY pseudo COLLATE NOCASE")->fetchAll();
 
 page_header('Officiers', 'admin');
@@ -57,6 +58,16 @@ admin_tabs('admin');
       <button class="btn btn-gold" type="submit">Faire le reset hebdomadaire</button>
     </form>
 </section>
+
+<?php if ((int) cfg('backup_every_hours') > 0): ?>
+<section class="panel">
+  <h2>Sauvegardes automatiques</h2>
+  <p>Toutes les <?= (int) cfg('backup_every_hours') ?> h, dans <code>data/backups/</code> sur le serveur (hors du site : à récupérer par SFTP).
+    <?= $backups['count'] ?> sauvegarde<?= $backups['count'] > 1 ? 's' : '' ?> conservée<?= $backups['count'] > 1 ? 's' : '' ?> sur <?= (int) cfg('backup_keep') ?>,
+    dernière <?= e(fmt_ago($backups['last'])) ?>.</p>
+  <?php if ($backups['error']): ?><p class="flash flash-error">Dernier échec : <?= e($backups['error']) ?></p><?php endif; ?>
+</section>
+<?php endif; ?>
 
 <?php if (aion_enabled()): ?>
 <section class="panel">
