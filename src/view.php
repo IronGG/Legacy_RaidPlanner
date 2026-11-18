@@ -20,10 +20,10 @@ function page_header(string $title, string $active = '', bool $wide = false): vo
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?> | <?= e(cfg('app_name')) ?></title>
-<link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="<?= e(asset_url('assets/app.css')) ?>">
 <link rel="stylesheet" href="theme.php?v=<?= e(options_version()) ?>">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<script src="assets/app.js" defer></script>
+<script src="<?= e(asset_url('assets/app.js')) ?>" defer></script>
 </head>
 <body data-poll="<?= (int) cfg('poll_ms') ?>">
 <header class="topbar">
@@ -44,6 +44,13 @@ function page_header(string $title, string $active = '', bool $wide = false): vo
 <?php foreach (take_flashes() as [$type, $msg]): ?>
   <p class="flash flash-<?= e($type) ?>" role="status"><?= e($msg) ?></p>
 <?php endforeach;
+}
+
+/** Adresse d'un fichier statique avec sa date de modification : le navigateur recharge le fichier après chaque mise à jour. */
+function asset_url(string $path): string
+{
+    $file = APP_ROOT . '/public/' . $path;
+    return $path . (is_file($file) ? '?v=' . filemtime($file) : '');
 }
 
 function page_footer(): void
