@@ -62,7 +62,7 @@ La base SQLite vit dans le volume `guildraid-data`.
 
 1. Installe PHP une fois : `winget install --id PHP.PHP.8.3 -e`, puis ferme et rouvre le terminal.
 2. Double-clique sur `start.bat` (ou lance-le dans le terminal). Il charge les extensions nécessaires,
-   crée la base et ton compte officier au premier lancement, puis ouvre l'app sur http://localhost:8080.
+   crée la base et ton compte de chef de légion au premier lancement, puis ouvre l'app sur http://localhost:8080.
 
 ### Sans Docker (Linux / macOS / autre)
 
@@ -91,20 +91,29 @@ Envoie `seed/membres.json` sur le serveur juste pour l'import, puis supprime-le.
 
 ## Permissions
 
-| | Membre | Raid lead | Officier |
-|---|---|---|---|
-| Rejoindre les salles, modifier son propre profil | Oui | Oui | Oui |
-| Gérer **toutes** les salles (créer, modifier, déplacer, retirer, terminer) | Seulement les siennes | Oui | Oui |
-| Consulter le profil des autres membres et leurs signalements (pas activé, hors légion…) | Non | Oui, sans rien modifier | Oui |
-| Modifier les autres membres, codes d'accès, reset, listes du site | Non | Non | Oui |
+| | Membre | Raid lead | Officier | Chef de légion |
+|---|---|---|---|---|
+| Rejoindre les salles, modifier son propre profil | Oui | Oui | Oui | Oui |
+| Gérer **toutes** les salles (créer, modifier, déplacer, retirer, terminer) | Seulement les siennes | Oui | Oui | Oui |
+| Consulter le profil des autres membres et leurs signalements (pas activé, hors légion…) | Non | Oui, sans rien modifier | Oui | Oui |
+| Modifier les autres membres, reset, listes du site | Non | Non | Oui | Oui |
+| Donner ou retirer le rang de raid lead | Non | Non | Oui | Oui |
+| Retirer de la légion, réinitialiser l'accès | Non | Non | Membres et raid leads | Membres, raid leads et officiers |
+| Donner ou retirer le rang d'officier | Non | Non | Non | Oui |
 
-Un officier attribue ces rangs dans le profil du membre, section **Permissions** (visible seulement des officiers ;
-on ne peut pas changer ses propres permissions). Chaque membre porte le tag de son rang le plus élevé : « Officier »
-ou « Raid lead ». Helper, shot caller et « clear cette semaine » sont des choix du joueur, dans « Ce que je propose ».
+Les rangs se changent dans le profil du membre, section **Permissions** (visible seulement des officiers ; on ne
+peut pas changer ses propres permissions). Un officier n'agit jamais sur un autre officier ni sur le chef de légion :
+pas de retrait de la légion, pas de code de réinitialisation (il permettrait de prendre le compte), pas de changement
+de rang. Il n'y a qu'un **chef de légion**, désigné en ligne de commande : `php bin/install.php Pseudo`. Lancée avec un
+autre pseudo, la commande transmet le rang (l'ancien chef reste officier) ; avec le sien, elle sert à retrouver
+l'accès, car personne ne peut réinitialiser celui du chef depuis le site.
+
+Chaque membre porte le tag de son rang le plus élevé : « Chef de légion », « Officier » ou « Raid lead ». Helper,
+shot caller et « clear cette semaine » sont des choix du joueur, dans « Ce que je propose ».
 
 ## Premiers pas
 
-1. `php bin/install.php TonPseudo` te passe officier et affiche un code d'activation.
+1. `php bin/install.php TonPseudo` te passe chef de légion et affiche un code d'activation.
 2. Active ton compte avec ce code, puis va dans **Officiers**.
 3. Pour chaque membre importé, clique **Générer un code** et envoie-le en MP sur Discord avec le lien de
    `activate.php`. Les nouveaux joueurs peuvent aussi s'inscrire eux-mêmes via **S'inscrire**.
@@ -184,7 +193,7 @@ Le site ne propose volontairement aucun téléchargement de la base : on la réc
 
 ```
 config.php            réglages
-bin/install.php       création de la base + premier officier
+bin/install.php       création de la base + chef de légion
 seed/membres.json     membres extraits de l'Excel (import au premier lancement)
 data/                 base SQLite (créée automatiquement)
 src/                  logique : base, authentification, salles, rendu

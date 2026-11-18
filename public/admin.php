@@ -19,7 +19,12 @@ if (is_post()) {
             break;
         case 'code':
             $m = member_by_id((int) ($_POST['member_id'] ?? 0));
-            if ($m) {
+            if ($m && !can_act_on($me, $m)) {
+                // Un code permet de choisir un nouveau mot de passe, donc de prendre le compte : jamais sur son rang ou au-dessus.
+                flash('error', (int) $m['id'] === (int) $me['id'] ? 'Change ton mot de passe dans « Mon profil ».'
+                    : (is_leader($m) ? "L'accès du chef de légion se réinitialise en ligne de commande (php bin/install.php)."
+                    : "Seul le chef de légion peut réinitialiser l'accès d'un officier."));
+            } elseif ($m) {
                 $code = issue_activation_code((int) $m['id']);
                 // Affiché une seule fois : seul le hash est stocké.
                 $_SESSION['last_code'] = ['pseudo' => $m['pseudo'], 'code' => $code];
@@ -31,7 +36,7 @@ if (is_post()) {
 
 $lastCode = $_SESSION['last_code'] ?? null;
 unset($_SESSION['last_code']);
-$members = q('SELECT id, pseudo, classe, password_hash IS NOT NULL AS active, activation_expires FROM members ORDER BY active, pseudo COLLATE NOCASE')->fetchAll();
+$members = q('SELECT id, pseudo, classe, is_officer, is_raid_lead, is_leader, password_hash IS NOT NULL AS active, activation_expires FROM members ORDER BY active, pseudo COLLATE NOCASE')->fetchAll();
 $stats = legion_stats();
 $aion = aion_stats();
 $backups = backup_status();
@@ -106,10 +111,14 @@ admin_tabs('admin');
         <span class="access-name"><a href="profile.php?id=<?= (int) $m['id'] ?>"><?= e($m['pseudo']) ?></a></span>
         <span class="muted small"><?= ($m['active'] ? 'Compte actif' : 'Pas encore activé')
             . (($m['activation_expires'] && $m['activation_expires'] > time()) ? ', code en attente jusqu\'au ' . e(fmt_dt($m['activation_expires'])) : '') ?></span>
+        <?php if (can_act_on($me, $m)): ?>
         <form method="post" class="inline"<?= $m['active'] ? ' data-confirm="Générer un code de réinitialisation pour ' . e($m['pseudo']) . ' ?"' : '' ?>>
           <?= csrf_field() ?><input type="hidden" name="form" value="code"><input type="hidden" name="member_id" value="<?= (int) $m['id'] ?>">
           <button class="mini" type="submit"><?= $m['active'] ? 'Réinitialiser l\'accès' : 'Générer un code' ?></button>
         </form>
+        <?php else: ?>
+        <span class="muted small"><?= (int) $m['id'] === (int) $me['id'] ? 'Toi' : (is_leader($m) ? 'Chef de légion' : 'Officier : réservé au chef de légion') ?></span>
+        <?php endif; ?>
       </li>
     <?php endforeach; ?>
   </ul>

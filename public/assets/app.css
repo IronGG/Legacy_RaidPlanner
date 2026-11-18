@@ -92,6 +92,7 @@ p { margin: 0 0 .8em; }
 .badge-aether { border-color: transparent; background: rgba(114, 215, 232, .14); color: var(--aether); }
 .badge-muted { color: var(--mist); }
 .badge-officer { border-color: transparent; background: var(--gold); color: var(--gold-ink); }
+.badge-leader { border-color: transparent; background: linear-gradient(135deg, #f6dc9c, var(--gold) 60%, #c9953f); color: var(--gold-ink); box-shadow: 0 0 8px rgba(227, 184, 102, .45); }
 .badge-lead { border-color: var(--gold); color: var(--gold); }
 .badge-danger { color: var(--ember); border-color: #6b3a3a; }
 

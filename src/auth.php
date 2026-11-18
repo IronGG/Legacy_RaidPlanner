@@ -97,12 +97,21 @@ function require_login(): array
 }
 
 /*
- * Permissions. Officier : tout (salles, membres, accès, listes du site). Raid lead : gère toutes les salles
- * et consulte les profils des membres, sans rien modifier. Les deux sont attribués par un officier.
+ * Permissions, du rang le plus haut au plus bas :
+ *  - Chef de légion : tout ce que fait un officier, plus donner ou retirer le rang d'officier et agir sur les
+ *    officiers (les retirer de la légion, réinitialiser leur accès). Un seul, désigné par bin/install.php.
+ *  - Officier : salles, membres, accès, listes du site. N'agit que sur les membres de rang inférieur au sien.
+ *  - Raid lead : gère toutes les salles et consulte les profils des membres, sans rien modifier.
  */
+function is_leader(array $m): bool
+{
+    return (int) ($m['is_leader'] ?? 0) === 1;
+}
+
+/** Officier, ou chef de légion (qui a tous les droits d'un officier). */
 function is_officer(array $m): bool
 {
-    return (int) ($m['is_officer'] ?? 0) === 1;
+    return is_leader($m) || (int) ($m['is_officer'] ?? 0) === 1;
 }
 
 function is_raid_lead(array $m): bool
@@ -116,10 +125,32 @@ function can_lead(array $m): bool
     return is_officer($m) || is_raid_lead($m);
 }
 
-/** Le rang le plus élevé du membre, pour son tag : 'officer', 'raid_lead' ou null. */
+/** Le rang le plus élevé du membre, pour son tag : 'leader', 'officer', 'raid_lead' ou null. */
 function member_rank(array $m): ?string
 {
-    return is_officer($m) ? 'officer' : (is_raid_lead($m) ? 'raid_lead' : null);
+    return is_leader($m) ? 'leader' : (is_officer($m) ? 'officer' : (is_raid_lead($m) ? 'raid_lead' : null));
+}
+
+/** Niveau du rang : 3 chef de légion, 2 officier, 1 raid lead, 0 membre. */
+function rank_level(array $m): int
+{
+    return match (member_rank($m)) { 'leader' => 3, 'officer' => 2, 'raid_lead' => 1, default => 0 };
+}
+
+/**
+ * Agir sur un autre membre : le retirer de la légion, réinitialiser son accès, changer son rang de raid lead.
+ * Réservé aux officiers, et seulement sur un rang inférieur au sien : un officier n'agit ni sur un autre
+ * officier ni sur le chef de légion.
+ */
+function can_act_on(array $me, array $m): bool
+{
+    return is_officer($me) && (int) $me['id'] !== (int) $m['id'] && rank_level($me) > rank_level($m);
+}
+
+/** Donner ou retirer le rang d'officier : le chef de légion seul. */
+function can_grant_officer(array $me, array $m): bool
+{
+    return is_leader($me) && can_act_on($me, $m);
 }
 
 function require_officer(): array

@@ -60,7 +60,7 @@ function room_members_of(array $roomIds): array
     if (!$roomIds) return $out;
     $in = implode(',', array_fill(0, count($roomIds), '?'));
     $rows = q("SELECT rm.room_id, rm.slot, rm.position, rm.slot_since, rm.late, rm.voluntary, m.id, m.pseudo, m.classe, m.role, m.gs, m.cp,
-                      m.connaissance, m.inscription, m.clear_semaine, m.helper, m.shot_caller, m.verifie, m.is_officer, m.is_raid_lead
+                      m.connaissance, m.inscription, m.clear_semaine, m.helper, m.shot_caller, m.verifie, m.is_officer, m.is_raid_lead, m.is_leader
                FROM room_members rm JOIN members m ON m.id = rm.member_id
                WHERE rm.room_id IN ($in)
                ORDER BY rm.slot, rm.position, rm.slot_since, rm.rowid", array_values($roomIds))->fetchAll();

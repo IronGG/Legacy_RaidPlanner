@@ -24,6 +24,11 @@ if (is_post() && $readOnly) {
 }
 
 if (is_post() && ($_POST['form'] ?? '') === 'delete' && $isOfficer && !$self) {
+    if (!can_act_on($me, $m)) {
+        flash('error', is_leader($m) ? 'Le chef de légion ne peut pas être retiré de la légion.'
+            : 'Seul le chef de légion peut retirer un officier de la légion.');
+        redirect($selfUrl);
+    }
     q('DELETE FROM members WHERE id = ?', [$m['id']]);
     flash('ok', $m['pseudo'] . ' a été retiré de la légion.');
     redirect('members.php');
@@ -93,9 +98,13 @@ if (is_post() && ($_POST['form'] ?? '') === 'profile') {
     $new['shot_caller'] = in_bool('shot_caller'); // choix du joueur, comme helper
     if ($isOfficer) {
         $new['verifie'] = in_bool('verifie');
-        if (!$self) { // un officier ne change pas ses propres permissions (pas de risque de se les retirer)
-            $new['is_officer'] = in_bool('is_officer');
+        // Jamais ses propres permissions. Raid lead : sur un rang inférieur au sien. Officier : le chef de légion seul.
+        // Une case non modifiable n'est pas envoyée par le navigateur : on ne touche alors pas à la colonne.
+        if (can_act_on($me, $m)) {
             $new['is_raid_lead'] = in_bool('is_raid_lead');
+        }
+        if (can_grant_officer($me, $m)) {
+            $new['is_officer'] = in_bool('is_officer');
         }
     } else {
         // Comme la colonne « Vérifié » de l'Excel : changer ses stats demande une nouvelle vérification.
@@ -205,14 +214,21 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
     <label class="check"><input type="checkbox" name="clear_semaine" value="1"<?= (int) $m['clear_semaine'] ? ' checked' : '' ?>> <?= $self ? "J'ai déjà clear cette semaine" : 'A déjà clear cette semaine' ?></label>
   </fieldset>
   <div class="field"><label for="f-notes">Notes / contraintes</label><textarea id="f-notes" name="notes" rows="3" maxlength="600"><?= e($m['notes']) ?></textarea></div>
-  <?php if ($isOfficer): ?>
+  <?php if ($isOfficer):
+      $canRank = can_act_on($me, $m);
+      $canOfficer = can_grant_officer($me, $m); ?>
     <section class="officer-box" aria-labelledby="perm-title">
       <h2 id="perm-title">Permissions <span class="opt">visible seulement des officiers</span></h2>
+      <?php if (is_leader($m)): ?><p><span class="badge badge-leader">Chef de légion</span> Tous les droits d'un officier, et lui seul donne ou retire le rang d'officier.</p><?php endif; ?>
       <div class="checks">
-        <label class="check"><input type="checkbox" name="is_officer" value="1"<?= is_officer($m) ? ' checked' : '' ?><?= $self ? ' disabled' : '' ?>> Officier : gère tout (salles, membres, accès, listes du site)</label>
-        <label class="check"><input type="checkbox" name="is_raid_lead" value="1"<?= is_raid_lead($m) ? ' checked' : '' ?><?= $self ? ' disabled' : '' ?>> Raid lead : gère toutes les salles et consulte les profils, sans les modifier</label>
+        <label class="check"><input type="checkbox" name="is_officer" value="1"<?= is_officer($m) ? ' checked' : '' ?><?= $canOfficer ? '' : ' disabled' ?>> Officier : gère les salles, les membres, les accès et les listes du site</label>
+        <label class="check"><input type="checkbox" name="is_raid_lead" value="1"<?= is_raid_lead($m) ? ' checked' : '' ?><?= $canRank ? '' : ' disabled' ?>> Raid lead : gère toutes les salles et consulte les profils, sans les modifier</label>
       </div>
-      <?php if ($self): ?><p class="hint">Un autre officier doit changer tes propres permissions.</p><?php endif; ?>
+      <?php if ($self && is_leader($m)): ?><p class="hint">Le rang de chef de légion se transmet en ligne de commande : <code>php bin/install.php NouveauChef</code>.</p>
+      <?php elseif ($self): ?><p class="hint">Seul le chef de légion peut changer tes permissions.</p>
+      <?php elseif (is_leader($m)): ?><p class="hint">Les permissions du chef de légion ne se changent pas depuis le site.</p>
+      <?php elseif (!$canRank): ?><p class="hint">Seul le chef de légion peut changer les permissions d'un officier.</p>
+      <?php elseif (!$canOfficer): ?><p class="hint">Seul le chef de légion donne ou retire le rang d'officier.</p><?php endif; ?>
       <h3>Vérification</h3>
       <div class="checks">
         <label class="check"><input type="checkbox" name="verifie" value="1"<?= (int) $m['verifie'] ? ' checked' : '' ?>> Infos vérifiées par un officier</label>
@@ -232,10 +248,12 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
     <div class="field"><label for="f-new">Nouveau mot de passe</label><input id="f-new" type="password" name="new_password" required minlength="8" autocomplete="new-password"></div>
     <p><button class="btn btn-ghost" type="submit">Changer le mot de passe</button></p>
   </form>
-<?php elseif ($isOfficer): ?>
+<?php elseif ($isOfficer && can_act_on($me, $m)): ?>
   <form method="post" class="form form-narrow" action="<?= e($selfUrl) ?>" data-confirm="Retirer <?= e($m['pseudo']) ?> de la légion ? Son profil et ses inscriptions seront supprimés.">
     <?= csrf_field() ?><input type="hidden" name="form" value="delete">
     <p><button class="btn btn-danger" type="submit">Retirer de la légion</button></p>
   </form>
+<?php elseif ($isOfficer): ?>
+  <p class="hint"><?= is_leader($m) ? 'Le chef de légion ne peut pas être retiré de la légion.' : 'Seul le chef de légion peut retirer un officier de la légion.' ?></p>
 <?php endif; ?>
 <?php page_footer();

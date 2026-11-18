@@ -102,7 +102,8 @@ function member_badges(array $m, bool $withStatus = true): string
     $b = [];
     // Un seul tag de permission : le plus élevé
     $rank = member_rank($m);
-    if ($rank === 'officer') $b[] = '<span class="badge badge-officer">Officier</span>';
+    if ($rank === 'leader') $b[] = '<span class="badge badge-leader">Chef de légion</span>';
+    elseif ($rank === 'officer') $b[] = '<span class="badge badge-officer">Officier</span>';
     elseif ($rank === 'raid_lead') $b[] = '<span class="badge badge-lead">Raid lead</span>';
     if ((int) ($m['shot_caller'] ?? 0)) $b[] = '<span class="badge badge-gold">Shot caller</span>';
     if ((int) ($m['helper'] ?? 0)) $b[] = '<span class="badge">Helper</span>';

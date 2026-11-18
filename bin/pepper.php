@@ -71,7 +71,7 @@ pepper(true);
 echo "Nouvelle clé en place. Empreinte : " . pepper_fingerprint() . "\n\n";
 
 // 4. Codes pour les officiers, pour qu'ils puissent se reconnecter et distribuer les autres
-foreach (q('SELECT id, pseudo FROM members WHERE is_officer = 1 ORDER BY pseudo COLLATE NOCASE')->fetchAll() as $o) {
+foreach (q('SELECT id, pseudo FROM members WHERE is_officer = 1 OR is_leader = 1 ORDER BY pseudo COLLATE NOCASE')->fetchAll() as $o) {
     echo "Code d'activation de {$o['pseudo']} (7 jours) : " . issue_activation_code((int) $o['id']) . "\n";
 }
 echo "\nÀ faire maintenant :\n";
