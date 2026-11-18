@@ -107,11 +107,12 @@ les exports CSV, les sauvegardes `.sqlite` et les fichiers `.xlsx` ou `.zip`.
 
 ## Sauvegarde
 
-Tout est dans un seul fichier : `data/guildraid.sqlite` (membres, comptes, salles, listes, journal). Les réglages
-restent dans `config.php`, les icônes envoyées dans `public/assets/classes/custom/`.
+Tout est dans un seul fichier : `data/guildraid.sqlite` (membres, comptes avec les mots de passe hachés, salles,
+listes, journal). Les réglages restent dans `config.php`, les icônes envoyées dans `public/assets/classes/custom/`.
+Le site ne propose volontairement aucun téléchargement de la base : on la récupère par SSH/SFTP.
 
-- **Officiers > Télécharger la base** : copie cohérente de la base, même pendant que des joueurs l'utilisent.
-- **Officiers > Télécharger le CSV** : le recensement avec les colonnes de l'Excel.
+- Faire une copie cohérente (même si des joueurs utilisent le site à ce moment-là), en SSH :
+  `php bin/backup.php` crée `data/backup-AAAA-MM-JJ-HHMM.sqlite`. Télécharge-la en SFTP, puis supprime-la du serveur.
 - Restaurer : remplace `data/guildraid.sqlite` sur le serveur (SFTP) par une sauvegarde.
 - Mettre à jour l'app : remplace tous les fichiers **sauf** `data/` et `public/assets/classes/custom/`. Les évolutions
   de la base se font toutes seules au premier chargement.

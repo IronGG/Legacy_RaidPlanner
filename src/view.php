@@ -104,7 +104,7 @@ function member_badges(array $m, bool $withStatus = true): string
 /** Onglets de l'espace officiers. */
 function admin_tabs(string $active): void
 {
-    $tabs = ['admin' => ['admin.php', 'Accès, semaine et sauvegarde'], 'lists' => ['lists.php', 'Listes du site']];
+    $tabs = ['admin' => ['admin.php', 'Accès et semaine'], 'lists' => ['lists.php', 'Listes du site']];
     echo '<nav class="tabs" aria-label="Espace officiers">';
     foreach ($tabs as $key => [$href, $label]) {
         echo '<a href="' . e($href) . '"' . ($key === $active ? ' aria-current="page"' : '') . '>' . e($label) . '</a>';

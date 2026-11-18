@@ -49,23 +49,14 @@ admin_tabs('admin');
   </section>
 <?php endif; ?>
 
-<div class="admin-grid">
-  <section class="panel">
+<section class="panel">
     <h2>Reset hebdomadaire</h2>
     <p><?= $stats['cleared'] ?> joueur<?= $stats['cleared'] > 1 ? 's ont' : ' a' ?> clear cette semaine. Au reset du jeu, remets tout le monde à « pas encore clear » pour qu'ils puissent rejoindre les salles.</p>
     <form method="post" data-confirm="Remettre « clear cette semaine » à non pour toute la légion ?">
       <?= csrf_field() ?><input type="hidden" name="form" value="weekly_reset">
       <button class="btn btn-gold" type="submit">Faire le reset hebdomadaire</button>
     </form>
-  </section>
-  <section class="panel">
-    <h2>Sauvegarde et export</h2>
-    <p>La base complète (membres, comptes, salles, listes, journal) en un fichier SQLite. Elle contient les mots de passe hachés : garde-la en lieu sûr.</p>
-    <p><a class="btn btn-gold" href="backup.php">Télécharger la base</a></p>
-    <p class="muted small">Le recensement seul, au format CSV avec les colonnes de l'Excel :</p>
-    <p><a class="btn btn-ghost" href="export.php">Télécharger le CSV</a></p>
-  </section>
-</div>
+</section>
 
 <?php if (aion_enabled()): ?>
 <section class="panel">
