@@ -48,5 +48,11 @@ return [
     'aion_lang'          => 'fr-FR',  // classes en français, comme les listes du site
     'aion_legion'        => 'Legacy', // légion attendue en jeu (les officiers sont avertis sinon)
     'aion_refresh_hours' => 6,        // âge maximum d'une fiche avant relecture
+    // Sites communautaires pour voir l'équipement détaillé d'un personnage (liens dans les profils et la liste des membres).
+    // {region} = aion_region, {server} = aion_server_name en minuscules, {name} = nom du personnage en jeu.
+    'aion_armory_links'  => [
+        'kisk.app' => 'https://kisk.app/c/{region}/{server}/{name}',
+        'shugo.gg' => 'https://shugo.gg/character/global/{region}-{server}/{name}',
+    ],
     'aion_user_agent'    => 'GuildRaid-Legacy/1.0 (organisation de raids de la legion Legacy)',
 ];

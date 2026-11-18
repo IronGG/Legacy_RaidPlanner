@@ -139,6 +139,7 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
       <p class="meta game-line"><span><strong><?= e(aion_char_name($m)) ?></strong></span><span><?= e($m['classe']) ?> niveau <?= (int) $m['aion_level'] ?></span>
         <span>Serveur <?= e(cfg('aion_server_name')) ?></span><span>Légion <?= e($m['aion_legion'] ?: 'aucune') ?></span></p>
       <p class="game-stats"><span>GS <b><?= e(fmt_gs($m['gs'])) ?></b></span><span>CP <b><?= e(fmt_cp($m['cp'])) ?></b></span></p>
+      <?php if ($links = armory_links_html($m, 'armory armory-big')): ?><div class="armory-line"><span class="armory-label">Équipement détaillé</span><?= $links ?></div><?php endif; ?>
       <p class="muted small">Lu sur le site officiel d'AION 2 <?= e(fmt_ago($m['synced_at'])) ?>, relu automatiquement toutes les <?= (int) cfg('aion_refresh_hours') ?> h.</p>
       <?php if (aion_legion_mismatch($m)): ?><p class="flash flash-warn">En jeu, ce personnage n'est pas dans la légion <?= e(cfg('aion_legion')) ?>.</p><?php endif; ?>
     <?php elseif (($m['sync_status'] ?? '') === 'not_found'): ?>

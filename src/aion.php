@@ -147,6 +147,38 @@ function aion_char_name(array $m): string
 }
 
 /**
+ * Liens vers les sites qui détaillent l'équipement du personnage (kisk.app, shugo.gg…), libellé => URL.
+ * Seulement pour un personnage trouvé en jeu : un nom inconnu mènerait à une page vide.
+ */
+function aion_armory_links(array $m): array
+{
+    if (aion_enabled() && ($m['sync_status'] ?? '') !== 'ok') return [];
+    $vars = [
+        '{region}' => rawurlencode(strtolower((string) cfg('aion_region'))),
+        '{server}' => rawurlencode(mb_strtolower((string) cfg('aion_server_name'))),
+        '{name}'   => rawurlencode(aion_char_name($m)),
+    ];
+    $links = [];
+    foreach ((array) cfg('aion_armory_links') as $label => $tpl) {
+        $links[(string) $label] = strtr((string) $tpl, $vars);
+    }
+    return $links;
+}
+
+/** Les liens ci-dessus en HTML, en boutons sur une ligne (nouvel onglet). */
+function armory_links_html(array $m, string $class = 'armory'): string
+{
+    $links = aion_armory_links($m);
+    if (!$links) return '';
+    $h = [];
+    foreach ($links as $label => $url) {
+        $h[] = '<a class="armory-btn" href="' . e($url) . '" target="_blank" rel="noopener noreferrer" title="Équipement de '
+            . e(aion_char_name($m)) . ' sur ' . e($label) . ' (nouvel onglet)">' . e($label) . '</a>';
+    }
+    return '<span class="' . e($class) . '">' . implode('', $h) . '</span>';
+}
+
+/**
  * Lit la fiche officielle d'un membre et met à jour GS, CP, classe et niveau.
  * Retourne ['status' => ok|not_found|error, 'message' => ..., 'candidates' => [...]].
  */

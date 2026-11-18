@@ -71,6 +71,7 @@ page_header('Membres', 'members', true);
           <div>
             <span class="who-name"><?= $canView ? '<a href="profile.php?id=' . (int) $m['id'] . '">' . e($m['pseudo']) . '</a>' : e($m['pseudo']) ?></span>
             <span class="who-sub"><?= e($m['classe']) ?><?= member_badges($m, false) ?><?= ($canView && !$m['password_hash']) ? '<span class="badge badge-muted">Pas activé</span>' : '' ?><?= ($canView && aion_legion_mismatch($m)) ? '<span class="badge badge-danger">Hors légion en jeu</span>' : '' ?><?= ($canView && aion_enabled() && $m['sync_status'] === 'not_found') ? '<span class="badge badge-danger">Introuvable en jeu</span>' : '' ?></span>
+            <?= armory_links_html($m, 'armory who-links') ?>
           </div>
         </div>
       </td>

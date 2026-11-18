@@ -302,6 +302,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--aether); outline
 .game-link { max-width: 760px; margin-bottom: 2rem; }
 .game-line { margin-bottom: .6rem; }
 .game-stats { display: flex; gap: 2rem; font-size: 1.05rem; margin-bottom: .3rem; }
+/* Liens vers kisk.app / shugo.gg : boutons côte à côte, sur une ligne */
+.armory { display: flex; flex-wrap: nowrap; gap: .5rem; }
+.armory-btn {
+  display: inline-flex; align-items: center; gap: .35rem; white-space: nowrap; text-decoration: none;
+  padding: .35rem .75rem; border: 1px solid var(--aether); border-radius: 999px;
+  color: var(--aether); font-weight: 600; font-size: .9rem; background: rgba(114, 215, 232, .08);
+}
+.armory-btn::after { content: "↗"; font-size: .85em; }
+.armory-btn:hover, .armory-btn:focus-visible { background: rgba(114, 215, 232, .18); color: var(--parchment); }
+.armory-line { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem 1rem; margin: .8rem 0 .7rem; }
+.armory-label { color: var(--mist); font-size: .95rem; }
+.armory-big .armory-btn { padding: .6rem 1.2rem; font-size: 1.05rem; }
+.who-links { margin-top: .35rem; }
 .game-stats b { font-family: var(--serif); font-size: 1.5rem; font-variant-numeric: tabular-nums; margin-left: .35rem; color: var(--aether); }
 .game-form { margin-top: 1rem; }
 .game-form label { display: block; font-weight: 600; margin-bottom: .4rem; }

@@ -134,6 +134,8 @@ officiel d'AION 2 (serveur Quai, réglable dans `config.php`), comme shugo.gg ou
 - En ligne de commande : `php bin/sync.php` (fiches à relire), `php bin/sync.php --all`, `php bin/sync.php Pseudo`.
   Une tâche planifiée qui lance `php bin/sync.php` toutes les heures est possible, mais pas nécessaire.
 - Les officiers voient un badge si un personnage n'est pas dans la légion en jeu, ou introuvable.
+- Une fois le personnage trouvé en jeu, son profil et la liste des membres ont des liens vers **kisk.app** et
+  **shugo.gg** pour voir son équipement détaillé (`aion_armory_links` dans `config.php` pour en ajouter ou en retirer).
 
 **Limite à connaître** : NCSOFT ne publie pas d'API officielle. L'app interroge les mêmes adresses que la recherche
 de personnage du site officiel (comme les autres outils communautaires), avec peu de requêtes et des pauses.
