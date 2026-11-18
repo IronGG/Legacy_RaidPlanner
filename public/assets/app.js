@@ -181,6 +181,17 @@
     document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') unpick(); });
   }
 
+  // Formulaire de salle : les champs propres au raid disparaissent pour un donjon
+  function syncKind(form) {
+    const k = form.querySelector('input[name="kind"]:checked');
+    const donjon = !!k && k.value === 'donjon';
+    form.querySelectorAll('[data-raid-only]').forEach(function (el) { el.hidden = donjon; });
+  }
+  document.querySelectorAll('form').forEach(function (f) { if (f.querySelector('input[name="kind"]')) syncKind(f); });
+  document.addEventListener('change', function (ev) {
+    if (ev.target.name === 'kind' && ev.target.form) syncKind(ev.target.form);
+  });
+
   // Confirmation avant les actions destructrices (attribut data-confirm sur le formulaire)
   document.addEventListener('submit', function (ev) {
     const btn = ev.submitter;

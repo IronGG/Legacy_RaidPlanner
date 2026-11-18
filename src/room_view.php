@@ -14,7 +14,7 @@ function phase_label(array $room): string
 
 function room_meta(array $room): string
 {
-    $parts = [];
+    $parts = ['<span class="kind">' . (room_is_raid($room) ? 'Raid' : 'Donjon') . '</span>'];
     if ($room['etape']) $parts[] = '<span>' . e($room['etape']) . '</span>';
     if ($room['objectif']) $parts[] = '<span>Objectif ' . e(mb_strtolower($room['objectif'])) . '</span>';
     if ($room['starts_at']) $parts[] = '<span>Départ ' . e(fmt_dt($room['starts_at'])) . '</span>';
@@ -46,7 +46,7 @@ function render_room_list(array $rooms, array $me): void
         foreach ($past as $room) {
             $c = slot_counts($room['members']);
             echo '<a class="past-row" href="room.php?r=' . e(rawurlencode($room['slug'])) . '"><span class="past-title">' . e($room['title']) . '</span>'
-                . '<span class="muted">' . e($room['etape'] ?? '') . '</span><span class="muted">' . $c['main'] . '/' . (int) $room['capacity'] . '</span>'
+                . '<span class="muted">' . e(room_is_raid($room) ? ($room['etape'] ?? '') : 'Donjon') . '</span><span class="muted">' . $c['main'] . '/' . (int) $room['capacity'] . '</span>'
                 . '<span class="status status-' . e(room_phase($room)) . ($room['outcome'] === 'clear' ? ' status-clear' : '') . '">' . e(phase_label($room)) . '</span></a>';
         }
         echo '</div>';
@@ -82,7 +82,9 @@ function render_room_card(array $room, array $me): void
       <div class="rc-stat">
         <p class="rc-count"><strong><?= $counts['main'] ?></strong>/<?= (int) $room['capacity'] ?>
           <?php if ($counts['reserve']): ?><span class="muted">+<?= $counts['reserve'] ?> en réserve</span><?php endif; ?></p>
-        <?php if ($phase === 'open'): ?>
+        <?php if (!room_is_raid($room)): ?>
+          <p class="timer timer-late">Sans délai</p>
+        <?php elseif ($phase === 'open'): ?>
           <p class="timer" data-deadline="<?= (int) $room['join_until'] ?>">encore <b data-left><?= e(fmt_left((int) $room['join_until'] - time())) ?></b></p>
         <?php else: ?>
           <p class="timer timer-late">Remplacements</p>
@@ -122,7 +124,11 @@ function render_room_live(array $room, array $me): void
     </div>
   </header>
 
-  <?php if ($phase === 'open'): ?>
+  <?php if ($phase === 'open' && !room_is_raid($room)): ?>
+    <section class="phase phase-open">
+      <p><strong>Donjon</strong> On peut rejoindre tant que le chef n'a pas terminé la salle.</p>
+    </section>
+  <?php elseif ($phase === 'open'): ?>
     <section class="phase phase-open" data-deadline="<?= (int) $room['join_until'] ?>" data-start="<?= (int) $room['join_opened_at'] ?>">
       <p><strong>Inscriptions ouvertes</strong> encore <b data-left><?= e(fmt_left((int) $room['join_until'] - time())) ?></b>
         <span class="muted">jusqu'à <?= e(fmt_when($room['join_until'])) ?></span></p>
@@ -268,6 +274,7 @@ function render_room_live(array $room, array $me): void
           <div class="manage-row">
             <a class="btn btn-ghost span-2" href="room_edit.php?r=<?= e(rawurlencode($room['slug'])) ?>">Modifier la salle</a>
           </div>
+          <?php if (room_is_raid($room)): ?>
           <div class="manage-row">
             <form method="post" action="<?= $action ?>"><?= csrf_field() ?><input type="hidden" name="action" value="extend"><input type="hidden" name="minutes" value="30"><button class="btn btn-ghost" type="submit"><?= $phase === 'open' ? 'Prolonger de 30 min' : 'Rouvrir 30 min' ?></button></form>
             <?php if ($phase === 'open'): ?>
@@ -279,6 +286,12 @@ function render_room_live(array $room, array $me): void
             <form method="post" action="<?= $action ?>" data-confirm="Terminer la salle sans clear ?"><?= csrf_field() ?><input type="hidden" name="action" value="finish"><input type="hidden" name="cleared" value="0"><button class="btn btn-ghost" type="submit">Finir sans clear</button></form>
             <form method="post" action="<?= $action ?>" data-confirm="Annuler la salle ?"><?= csrf_field() ?><input type="hidden" name="action" value="cancel"><button class="btn btn-danger" type="submit">Annuler</button></form>
           </div>
+          <?php else: ?>
+          <div class="manage-row">
+            <form method="post" action="<?= $action ?>" data-confirm="Terminer le donjon ?"><?= csrf_field() ?><input type="hidden" name="action" value="finish"><input type="hidden" name="cleared" value="0"><button class="btn btn-gold" type="submit">Terminer</button></form>
+            <form method="post" action="<?= $action ?>" data-confirm="Annuler la salle ?"><?= csrf_field() ?><input type="hidden" name="action" value="cancel"><button class="btn btn-danger" type="submit">Annuler</button></form>
+          </div>
+          <?php endif; ?>
         </section>
       <?php endif; ?>
 

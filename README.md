@@ -31,6 +31,13 @@ Autres règles (reprises de l'Excel) :
 - « Modifier la salle » (chef et officiers) reprend le formulaire de création sans retirer personne : on ne peut pas
   descendre sous le nombre de joueurs déjà dans le groupe ou la réserve, et les places supprimées sont replacées.
 
+### Raid ou donjon
+
+À la création (ou dans « Modifier la salle »), on choisit **Raid** (par défaut) ou **Donjon**. Un donjon n'a ni étape,
+ni objectif, ni GS minimum, ni délai d'inscription : on le rejoint tant que le chef ne l'a pas terminé (bouton
+« Terminer »). Il ne compte pas pour le clear de la semaine : un joueur déjà clear peut le rejoindre, et le terminer
+ne marque personne « clear ». Les places à rôle, la réserve et les déplacements marchent comme pour un raid.
+
 ### Places du groupe
 
 Le chef de salle et les officiers cliquent sur « Changer le rôle » sous une place libre pour choisir le rôle recherché (Tank, Soin…) ou « Tous rôles ». Seuls les joueurs de ce rôle peuvent prendre la place ; les autres vont en réserve et montent automatiquement dès qu'une place pour leur rôle s'ouvre (départ, ou rôle de place changé).

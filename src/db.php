@@ -179,6 +179,13 @@ function migrate(PDO $pdo): void
         $pdo->exec('PRAGMA user_version = 5');
         $pdo->exec('COMMIT');
     }
+    if ($version < 6) {
+        // Type de salle : raid (étape, objectif, délai d'inscription, clear de la semaine) ou donjon (rien de tout ça)
+        $pdo->exec('BEGIN IMMEDIATE');
+        $pdo->exec("ALTER TABLE rooms ADD COLUMN kind TEXT NOT NULL DEFAULT 'raid' CHECK (kind IN ('raid','donjon'))");
+        $pdo->exec('PRAGMA user_version = 6');
+        $pdo->exec('COMMIT');
+    }
 }
 
 /** Remplit les listes avec les valeurs de l'Excel, plus toute valeur déjà utilisée en base. */

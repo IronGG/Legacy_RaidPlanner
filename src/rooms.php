@@ -26,10 +26,19 @@ function room_by_slug(string $slug): ?array
     return q('SELECT r.*, m.pseudo AS leader_pseudo FROM rooms r LEFT JOIN members m ON m.id = r.leader_id WHERE r.slug = ?', [$slug])->fetch() ?: null;
 }
 
+/** Raid (par défaut) ou donjon : un donjon n'a ni étape, ni objectif, ni délai d'inscription, ni clear de la semaine. */
+function room_is_raid(array $room): bool
+{
+    return ($room['kind'] ?? 'raid') !== 'donjon';
+}
+
 function room_phase(array $room, ?int $now = null): string
 {
     if ($room['status'] !== 'active') {
         return $room['status'];
+    }
+    if (!room_is_raid($room)) {
+        return 'open'; // donjon : on rejoint tant que la salle n'est pas terminée
     }
     return ($now ?? time()) < (int) $room['join_until'] ? 'open' : 'late';
 }
@@ -148,7 +157,7 @@ function join_check(array $room, array $me, array $members, ?array $slotRoles = 
     if ($me['inscription'] === 'Indisponible') {
         return ['ok' => false, 'reason' => 'Ton statut est « Indisponible ». Change-le dans ton profil pour rejoindre une salle.'];
     }
-    if ((int) $me['clear_semaine'] === 1 && !(int) $room['allow_cleared']) {
+    if (room_is_raid($room) && (int) $me['clear_semaine'] === 1 && !(int) $room['allow_cleared']) {
         return ['ok' => false, 'reason' => "Tu as déjà clear cette semaine et cette salle n'accepte pas les joueurs déjà clear."];
     }
     if ($room['min_gs'] !== null && (int) ($me['gs'] ?? 0) < (int) $room['min_gs']) {
@@ -196,11 +205,11 @@ function room_create(array $data, array $me, bool $joinSelf): string
 {
     $slug = bin2hex(random_bytes(4));
     $now = time();
-    q('INSERT INTO rooms (slug, title, etape, objectif, leader_id, capacity, reserve_capacity, starts_at,
+    q('INSERT INTO rooms (slug, kind, title, etape, objectif, leader_id, capacity, reserve_capacity, starts_at,
                           join_opened_at, join_until, min_gs, allow_cleared, notes, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [
-        $slug, $data['title'], $data['etape'], $data['objectif'], (int) $me['id'], $data['capacity'], $data['reserve_capacity'],
-        $data['starts_at'], $now, $data['join_until'], $data['min_gs'], $data['allow_cleared'], $data['notes'], $now,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [
+        $slug, $data['kind'], $data['title'], $data['etape'], $data['objectif'], (int) $me['id'], $data['capacity'], $data['reserve_capacity'],
+        $data['starts_at'], $now, $data['join_until'] ?? $now, $data['min_gs'], $data['allow_cleared'], $data['notes'], $now,
     ]);
     $id = (int) db()->lastInsertId();
     for ($i = 0; $i < (int) $data['capacity']; $i++) {
@@ -238,13 +247,14 @@ function room_update(string $slug, array $data, array $me): string
 
         // Ce qui change, pour le journal
         $changes = [];
+        if ($data['kind'] !== ($room['kind'] ?? 'raid')) $changes[] = $data['kind'] === 'donjon' ? 'devient un donjon' : 'devient un raid';
         if ($data['title'] !== $room['title']) $changes[] = 'nom « ' . $data['title'] . ' »';
         if ($data['etape'] !== $room['etape']) $changes[] = 'étape ' . ($data['etape'] ?? '—');
         if ($data['objectif'] !== $room['objectif']) $changes[] = 'objectif ' . ($data['objectif'] ?? '—');
         if ($data['starts_at'] !== ($room['starts_at'] === null ? null : (int) $room['starts_at'])) {
             $changes[] = $data['starts_at'] ? 'départ ' . fmt_when($data['starts_at']) : 'sans heure de départ';
         }
-        if ($data['join_until'] !== null) $changes[] = "inscriptions jusqu'à " . fmt_when($data['join_until']);
+        if ($data['join_until'] !== null && $data['kind'] === 'raid') $changes[] = "inscriptions jusqu'à " . fmt_when($data['join_until']);
         if ($cap !== (int) $room['capacity']) $changes[] = "places {$room['capacity']} → $cap";
         if ($res !== (int) $room['reserve_capacity']) $changes[] = "réserve {$room['reserve_capacity']} → $res";
         if ($data['min_gs'] !== ($room['min_gs'] === null ? null : (int) $room['min_gs'])) {
@@ -256,9 +266,9 @@ function room_update(string $slug, array $data, array $me): string
         if ($data['notes'] !== $room['notes']) $changes[] = 'notes';
         if (!$changes) return 'Rien à changer.';
 
-        q('UPDATE rooms SET title = ?, etape = ?, objectif = ?, starts_at = ?, capacity = ?, reserve_capacity = ?,
+        q('UPDATE rooms SET kind = ?, title = ?, etape = ?, objectif = ?, starts_at = ?, capacity = ?, reserve_capacity = ?,
                             min_gs = ?, allow_cleared = ?, notes = ? WHERE id = ?',
-            [$data['title'], $data['etape'], $data['objectif'], $data['starts_at'], $cap, $res,
+            [$data['kind'], $data['title'], $data['etape'], $data['objectif'], $data['starts_at'], $cap, $res,
              $data['min_gs'], $data['allow_cleared'], $data['notes'], $room['id']]);
         if ($data['join_until'] !== null) {
             q('UPDATE rooms SET join_opened_at = ?, join_until = ? WHERE id = ?', [time(), $data['join_until'], $room['id']]);
@@ -533,6 +543,7 @@ function room_extend(string $slug, int $minutes, array $me): string
     $minutes = max(5, min(1440, $minutes));
     return tx(function (PDO $pdo) use ($slug, $minutes, $me) {
         $room = locked_room($slug, $me, true);
+        if (!room_is_raid($room)) throw new RoomError("Un donjon n'a pas de délai d'inscription.");
         $until = max(time(), (int) $room['join_until']) + $minutes * 60;
         q('UPDATE rooms SET join_until = ? WHERE id = ?', [$until, $room['id']]);
         log_room($pdo, (int) $room['id'], 'Inscriptions prolongées jusqu\'à ' . fmt_when($until) . ' par ' . $me['pseudo'] . '.');
@@ -544,6 +555,7 @@ function room_close_join(string $slug, array $me): string
 {
     return tx(function (PDO $pdo) use ($slug, $me) {
         $room = locked_room($slug, $me, true);
+        if (!room_is_raid($room)) throw new RoomError("Un donjon n'a pas de délai d'inscription.");
         if (room_phase($room) !== 'open') throw new RoomError('Les inscriptions sont déjà closes.');
         q('UPDATE rooms SET join_until = ? WHERE id = ?', [time(), $room['id']]);
         log_room($pdo, (int) $room['id'], 'Inscriptions closes par ' . $me['pseudo'] . '.');
@@ -556,6 +568,7 @@ function room_finish(string $slug, bool $cleared, array $me): string
 {
     return tx(function (PDO $pdo) use ($slug, $cleared, $me) {
         $room = locked_room($slug, $me, true);
+        $cleared = $cleared && room_is_raid($room); // le clear de la semaine ne concerne que le raid
         q("UPDATE rooms SET status = 'done', outcome = ?, closed_at = ? WHERE id = ?", [$cleared ? 'clear' : 'no_clear', time(), $room['id']]);
         $msg = 'Salle terminée.';
         if ($cleared) {
@@ -579,7 +592,7 @@ function leave_rooms_after_clear(PDO $pdo, array $room): array
 {
     $rows = q("SELECT rm.room_id, rm.member_id, rm.slot, m.pseudo
                FROM room_members rm
-               JOIN rooms r ON r.id = rm.room_id AND r.status = 'active' AND r.allow_cleared = 0 AND r.id <> ?
+               JOIN rooms r ON r.id = rm.room_id AND r.status = 'active' AND r.kind = 'raid' AND r.allow_cleared = 0 AND r.id <> ?
                JOIN members m ON m.id = rm.member_id
                WHERE rm.member_id IN (SELECT member_id FROM room_members WHERE room_id = ? AND slot = 'main')",
         [$room['id'], $room['id']])->fetchAll();

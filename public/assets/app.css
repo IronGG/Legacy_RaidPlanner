@@ -36,6 +36,7 @@ p { margin: 0 0 .8em; }
 .muted { color: var(--mist); }
 .small { font-size: .875rem; }
 .num { font-variant-numeric: tabular-nums; }
+[hidden] { display: none !important; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 :focus-visible { outline: 2px solid var(--aether); outline-offset: 2px; }
 
