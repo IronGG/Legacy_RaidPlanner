@@ -186,6 +186,13 @@ function migrate(PDO $pdo): void
         $pdo->exec('PRAGMA user_version = 6');
         $pdo->exec('COMMIT');
     }
+    if ($version < 7) {
+        // Raid lead : gère toutes les salles et consulte les profils, sans rien modifier
+        $pdo->exec('BEGIN IMMEDIATE');
+        $pdo->exec('ALTER TABLE members ADD COLUMN is_raid_lead INTEGER NOT NULL DEFAULT 0');
+        $pdo->exec('PRAGMA user_version = 7');
+        $pdo->exec('COMMIT');
+    }
 }
 
 /** Remplit les listes avec les valeurs de l'Excel, plus toute valeur déjà utilisée en base. */

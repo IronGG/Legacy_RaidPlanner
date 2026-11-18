@@ -18,7 +18,7 @@ Petite app web PHP pour organiser les raids de la légion, construite à partir 
 |---|---|
 | Inscriptions ouvertes (compte à rebours : 15 min à 7 jours, liste dans `config.php`) | On rejoint une place libre réservée à son rôle, sinon une place « Tous rôles », sinon la réserve. |
 | Remplacements (délai passé) | La salle reste ouverte. Si quelqu'un part, le premier réserviste dont le rôle convient à la place monte. S'il n'y a personne en réserve, n'importe qui peut prendre la place libre (badge « Remplaçant »). La réserve n'accepte plus de nouveaux. |
-| Terminée / annulée | Le chef de salle (ou un officier) clique « Clear réussi » (les titulaires passent « clear cette semaine »), « Finir sans clear » ou « Annuler ». Sans action, la salle s'archive 12 h après le départ, jamais tant que les inscriptions sont ouvertes. |
+| Terminée / annulée | Le chef de salle (ou un raid lead, ou un officier) clique « Clear réussi » (les titulaires passent « clear cette semaine »), « Finir sans clear » ou « Annuler ». Sans action, la salle s'archive 12 h après le départ, jamais tant que les inscriptions sont ouvertes. |
 
 Autres règles (reprises de l'Excel) :
 - un joueur déjà clear cette semaine ne peut pas rejoindre, sauf si la salle accepte les helpers ;
@@ -28,7 +28,7 @@ Autres règles (reprises de l'Excel) :
   d'eux-mêmes les autres salles qui n'acceptent pas les joueurs déjà clear, et leur place va à la réserve
   (`one_room_per_member` dans `config.php` pour revenir à une seule salle à la fois) ;
 - le chef peut prolonger / rouvrir 30 min, clore les inscriptions, passer quelqu'un en réserve, le remonter, le retirer ;
-- « Modifier la salle » (chef et officiers) reprend le formulaire de création sans retirer personne : on ne peut pas
+- « Modifier la salle » (chef, raid leads et officiers) reprend le formulaire de création sans retirer personne : on ne peut pas
   descendre sous le nombre de joueurs déjà dans le groupe ou la réserve, et les places supprimées sont replacées.
 
 ### Raid ou donjon
@@ -40,7 +40,7 @@ ne marque personne « clear ». Les places à rôle, la réserve et les déplace
 
 ### Places du groupe
 
-Le chef de salle et les officiers cliquent sur « Changer le rôle » sous une place libre pour choisir le rôle recherché (Tank, Soin…) ou « Tous rôles ». Seuls les joueurs de ce rôle peuvent prendre la place ; les autres vont en réserve et montent automatiquement dès qu'une place pour leur rôle s'ouvre (départ, ou rôle de place changé).
+Le chef de salle, les raid leads et les officiers cliquent sur « Changer le rôle » sous une place libre pour choisir le rôle recherché (Tank, Soin…) ou « Tous rôles ». Seuls les joueurs de ce rôle peuvent prendre la place ; les autres vont en réserve et montent automatiquement dès qu'une place pour leur rôle s'ouvre (départ, ou rôle de place changé).
 
 On peut aussi s'inscrire volontairement en réserve (« M'inscrire en réserve », pendant les inscriptions), ou laisser sa place du groupe (« Passer en réserve »). Un réserviste volontaire ne monte jamais automatiquement : il clique lui-même sur « Rejoindre le groupe », ou le chef le fait monter. Un joueur arrivé en réserve faute de place peut aussi choisir « Ne pas monter automatiquement ».
 
@@ -88,6 +88,19 @@ php bin/sync.php               # lie leurs personnages en jeu (GS, CP, classe)
 ```
 
 Envoie `seed/membres.json` sur le serveur juste pour l'import, puis supprime-le.
+
+## Permissions
+
+| | Membre | Raid lead | Officier |
+|---|---|---|---|
+| Rejoindre les salles, modifier son propre profil | Oui | Oui | Oui |
+| Gérer **toutes** les salles (créer, modifier, déplacer, retirer, terminer) | Seulement les siennes | Oui | Oui |
+| Consulter le profil des autres membres et leurs signalements (pas activé, hors légion…) | Non | Oui, sans rien modifier | Oui |
+| Modifier les autres membres, codes d'accès, reset, listes du site | Non | Non | Oui |
+
+Un officier attribue ces rangs dans le profil du membre, section **Permissions** (visible seulement des officiers ;
+on ne peut pas changer ses propres permissions). Chaque membre porte le tag de son rang le plus élevé : « Officier »
+ou « Raid lead ». Helper, shot caller et « clear cette semaine » sont des choix du joueur, dans « Ce que je propose ».
 
 ## Premiers pas
 

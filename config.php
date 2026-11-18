@@ -22,7 +22,7 @@ return [
     // true : une seule salle active à la fois (comme une room de jeu).
     'one_room_per_member' => false,
 
-    // Qui peut créer une salle : 'all' (tout membre connecté) ou 'officers'
+    // Qui peut créer une salle : 'all' (tout membre connecté) ou 'officers' (officiers et raid leads)
     'room_creation' => 'all',
 
     // Une salle active est archivée automatiquement X heures après son départ

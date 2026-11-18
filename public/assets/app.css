@@ -91,6 +91,8 @@ p { margin: 0 0 .8em; }
 .badge-gold { border-color: transparent; background: rgba(227, 184, 102, .16); color: var(--gold); }
 .badge-aether { border-color: transparent; background: rgba(114, 215, 232, .14); color: var(--aether); }
 .badge-muted { color: var(--mist); }
+.badge-officer { border-color: transparent; background: var(--gold); color: var(--gold-ink); }
+.badge-lead { border-color: var(--gold); color: var(--gold); }
 .badge-danger { color: var(--ember); border-color: #6b3a3a; }
 
 .meta { display: flex; flex-wrap: wrap; gap: .2rem 1.1rem; color: var(--mist); font-size: .9rem; margin: 0; }
@@ -262,6 +264,12 @@ input:not([type="radio"]):not([type="checkbox"]), select, textarea {
 input:focus, select:focus, textarea:focus { border-color: var(--aether); outline: none; }
 .code-input { font-variant-numeric: tabular-nums; letter-spacing: .12em; text-transform: uppercase; }
 .checks { display: grid; gap: .5rem; }
+.form-lock { border: 0; margin: 0; padding: 0; min-width: 0; }
+.form-lock:disabled { opacity: .85; }
+.officer-box { margin: 1.5rem 0 1.2rem; padding: 1rem 1.1rem; border: 1px solid var(--gold); border-radius: var(--radius); background: rgba(227, 184, 102, .05); }
+.officer-box h2 { font-size: 1.05rem; margin: 0 0 .7rem; }
+.officer-box h3 { font-size: .95rem; margin: 1.1rem 0 .5rem; }
+.officer-box .hint { margin: .5rem 0 0; }
 .checks > .check { display: flex; gap: .55rem; align-items: center; font-weight: 400; margin: 0; cursor: pointer; }
 .check input { width: 1.05rem; height: 1.05rem; accent-color: var(--gold); }
 

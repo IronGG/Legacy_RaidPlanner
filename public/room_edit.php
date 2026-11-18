@@ -8,7 +8,7 @@ $room = room_by_slug($slug);
 if (!$room || $room['status'] !== 'active' || !can_manage_room($room, $me)) {
     flash('error', !$room ? 'Salle introuvable.' : ($room['status'] !== 'active'
         ? 'Cette salle est terminée : elle ne peut plus être modifiée.'
-        : 'Seuls le chef de salle et les officiers peuvent modifier la salle.'));
+        : 'Seuls le chef de salle, les raid leads et les officiers peuvent modifier la salle.'));
     redirect($room ? 'room.php?r=' . rawurlencode($slug) : 'index.php');
 }
 

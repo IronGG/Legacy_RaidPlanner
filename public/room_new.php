@@ -3,7 +3,7 @@ require __DIR__ . '/../src/bootstrap.php';
 require __DIR__ . '/../src/room_form.php';
 $me = require_login();
 if (!can_create_room($me)) {
-    flash('error', 'Seuls les officiers peuvent créer une salle.');
+    flash('error', 'Seuls les raid leads et les officiers peuvent créer une salle.');
     redirect('index.php');
 }
 

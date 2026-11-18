@@ -96,10 +96,36 @@ function require_login(): array
     return $me;
 }
 
+/*
+ * Permissions. Officier : tout (salles, membres, accès, listes du site). Raid lead : gère toutes les salles
+ * et consulte les profils des membres, sans rien modifier. Les deux sont attribués par un officier.
+ */
+function is_officer(array $m): bool
+{
+    return (int) ($m['is_officer'] ?? 0) === 1;
+}
+
+function is_raid_lead(array $m): bool
+{
+    return (int) ($m['is_raid_lead'] ?? 0) === 1;
+}
+
+/** Gérer toutes les salles et voir les profils : officiers et raid leads. */
+function can_lead(array $m): bool
+{
+    return is_officer($m) || is_raid_lead($m);
+}
+
+/** Le rang le plus élevé du membre, pour son tag : 'officer', 'raid_lead' ou null. */
+function member_rank(array $m): ?string
+{
+    return is_officer($m) ? 'officer' : (is_raid_lead($m) ? 'raid_lead' : null);
+}
+
 function require_officer(): array
 {
     $me = require_login();
-    if (!(int) $me['is_officer']) {
+    if (!is_officer($me)) {
         http_response_code(403);
         page_header('Accès réservé');
         echo '<p class="empty">Cette page est réservée aux officiers de la légion.</p>';

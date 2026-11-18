@@ -45,12 +45,12 @@ function room_phase(array $room, ?int $now = null): string
 
 function can_manage_room(array $room, array $me): bool
 {
-    return (int) $me['is_officer'] === 1 || (int) $room['leader_id'] === (int) $me['id'];
+    return can_lead($me) || (int) $room['leader_id'] === (int) $me['id'];
 }
 
 function can_create_room(array $me): bool
 {
-    return cfg('room_creation') !== 'officers' || (int) $me['is_officer'] === 1;
+    return cfg('room_creation') !== 'officers' || can_lead($me);
 }
 
 /** Membres d'une ou plusieurs salles, titulaires d'abord puis réserve dans l'ordre d'arrivée. */
@@ -60,7 +60,7 @@ function room_members_of(array $roomIds): array
     if (!$roomIds) return $out;
     $in = implode(',', array_fill(0, count($roomIds), '?'));
     $rows = q("SELECT rm.room_id, rm.slot, rm.position, rm.slot_since, rm.late, rm.voluntary, m.id, m.pseudo, m.classe, m.role, m.gs, m.cp,
-                      m.connaissance, m.inscription, m.clear_semaine, m.helper, m.shot_caller, m.verifie
+                      m.connaissance, m.inscription, m.clear_semaine, m.helper, m.shot_caller, m.verifie, m.is_officer, m.is_raid_lead
                FROM room_members rm JOIN members m ON m.id = rm.member_id
                WHERE rm.room_id IN ($in)
                ORDER BY rm.slot, rm.position, rm.slot_since, rm.rowid", array_values($roomIds))->fetchAll();
@@ -197,7 +197,7 @@ function locked_room(string $slug, ?array $me = null, bool $manage = false, bool
     $room = room_by_slug($slug);
     if (!$room) throw new RoomError('Salle introuvable.');
     if ($mustBeActive && $room['status'] !== 'active') throw new RoomError('Cette salle est fermée.');
-    if ($manage && (!$me || !can_manage_room($room, $me))) throw new RoomError('Seuls le chef de salle et les officiers peuvent faire ça.');
+    if ($manage && (!$me || !can_manage_room($room, $me))) throw new RoomError('Seuls le chef de salle, les raid leads et les officiers peuvent faire ça.');
     return $room;
 }
 

@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/../src/bootstrap.php';
 $me = require_login();
-$isOfficer = (int) $me['is_officer'] === 1;
+$canView = can_lead($me); // officiers et raid leads : accès aux profils et aux signalements
 
 $f = [
     'classe'      => in_choice('classe', opts('classe', null, true), null, $_GET),
@@ -69,8 +69,8 @@ page_header('Membres', 'members', true);
         <div class="who">
           <?= class_icon($m['classe'], 32) ?>
           <div>
-            <span class="who-name"><?= $isOfficer ? '<a href="profile.php?id=' . (int) $m['id'] . '">' . e($m['pseudo']) . '</a>' : e($m['pseudo']) ?></span>
-            <span class="who-sub"><?= e($m['classe']) ?><?= member_badges($m, false) ?><?= ($isOfficer && !$m['password_hash']) ? '<span class="badge badge-muted">Pas activé</span>' : '' ?><?= ($isOfficer && aion_legion_mismatch($m)) ? '<span class="badge badge-danger">Hors légion en jeu</span>' : '' ?><?= ($isOfficer && aion_enabled() && $m['sync_status'] === 'not_found') ? '<span class="badge badge-danger">Introuvable en jeu</span>' : '' ?></span>
+            <span class="who-name"><?= $canView ? '<a href="profile.php?id=' . (int) $m['id'] . '">' . e($m['pseudo']) . '</a>' : e($m['pseudo']) ?></span>
+            <span class="who-sub"><?= e($m['classe']) ?><?= member_badges($m, false) ?><?= ($canView && !$m['password_hash']) ? '<span class="badge badge-muted">Pas activé</span>' : '' ?><?= ($canView && aion_legion_mismatch($m)) ? '<span class="badge badge-danger">Hors légion en jeu</span>' : '' ?><?= ($canView && aion_enabled() && $m['sync_status'] === 'not_found') ? '<span class="badge badge-danger">Introuvable en jeu</span>' : '' ?></span>
           </div>
         </div>
       </td>

@@ -1,11 +1,11 @@
 <?php
 require __DIR__ . '/../src/bootstrap.php';
 $me = require_login();
-$isOfficer = (int) $me['is_officer'] === 1;
+$isOfficer = is_officer($me);
 
-// Un officier peut éditer n'importe quel membre via ?id=, les autres seulement eux-mêmes.
+// Un officier peut modifier n'importe quel membre via ?id= ; un raid lead peut le consulter sans rien modifier.
 $id = (int) ($_GET['id'] ?? $me['id']);
-if ($id !== (int) $me['id'] && !$isOfficer) {
+if ($id !== (int) $me['id'] && !can_lead($me)) {
     redirect('profile.php');
 }
 $m = member_by_id($id);
@@ -15,7 +15,13 @@ if (!$m) {
 }
 $self = (int) $m['id'] === (int) $me['id'];
 $selfUrl = 'profile.php' . ($self ? '' : '?id=' . (int) $m['id']);
+$readOnly = !$self && !$isOfficer; // raid lead sur le profil d'un autre
 $errors = [];
+
+if (is_post() && $readOnly) {
+    flash('error', 'Seuls les officiers peuvent modifier le profil d\'un autre membre.');
+    redirect($selfUrl);
+}
 
 if (is_post() && ($_POST['form'] ?? '') === 'delete' && $isOfficer && !$self) {
     q('DELETE FROM members WHERE id = ?', [$m['id']]);
@@ -84,10 +90,13 @@ if (is_post() && ($_POST['form'] ?? '') === 'profile') {
         $errors[] = 'CP non reconnu : écris par exemple 174k, 190,5k ou 190500.';
     }
 
+    $new['shot_caller'] = in_bool('shot_caller'); // choix du joueur, comme helper
     if ($isOfficer) {
-        $new['shot_caller'] = in_bool('shot_caller');
         $new['verifie'] = in_bool('verifie');
-        if (!$self) $new['is_officer'] = in_bool('is_officer'); // pas de risque de se retirer ses propres droits
+        if (!$self) { // un officier ne change pas ses propres permissions (pas de risque de se les retirer)
+            $new['is_officer'] = in_bool('is_officer');
+            $new['is_raid_lead'] = in_bool('is_raid_lead');
+        }
     } else {
         // Comme la colonne « Vérifié » de l'Excel : changer ses stats demande une nouvelle vérification.
         foreach (['classe', 'role', 'gs', 'cp', 'connaissance', 'meilleure_etape'] as $k) {
@@ -139,7 +148,7 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
     <?php else: ?>
       <p class="muted">Ton GS et ton CP seront lus sur le site officiel d'AION 2 à partir du nom de ton personnage.</p>
     <?php endif; ?>
-    <?php if ($cands): ?>
+    <?php if ($cands && !$readOnly): ?>
       <p>Personnages proches sur <?= e(cfg('aion_server_name')) ?> :</p>
       <ul class="cands">
         <?php foreach ($cands as $c): ?>
@@ -148,6 +157,7 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
         <?php endforeach; ?>
       </ul>
     <?php endif; ?>
+    <?php if (!$readOnly): ?>
     <form method="post" action="<?= e($selfUrl) ?>" class="game-form">
       <?= csrf_field() ?><input type="hidden" name="form" value="sync">
       <label for="f-perso">Nom du personnage sur <?= e(cfg('aion_server_name')) ?></label>
@@ -156,11 +166,14 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
         <button class="btn btn-ghost" type="submit"><?= $synced ? 'Relire maintenant' : 'Lier mon personnage' ?></button>
       </div>
     </form>
+    <?php endif; ?>
   </section>
 <?php endif; ?>
 
+<?php if ($readOnly): ?><p class="flash flash-warn">Lecture seule : seuls les officiers peuvent modifier le profil d'un autre membre.</p><?php endif; ?>
 <form method="post" class="form" action="<?= e($selfUrl) ?>">
   <?= csrf_field() ?><input type="hidden" name="form" value="profile">
+  <fieldset class="form-lock"<?= $readOnly ? ' disabled' : '' ?>>
   <?php if ($synced): ?>
     <div class="field"><p class="field-label">Classe <span class="opt">lue en jeu</span></p><p class="locked"><?= class_icon($m['classe'], 40) ?><span><?= e($m['classe']) ?></span></p></div>
   <?php else: ?>
@@ -184,18 +197,30 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
   <fieldset class="field"><legend>Jours dispo</legend><?= chip_group('jours', DAYS, null, true, member_days($m)) ?></fieldset>
   <div class="field"><label for="f-creneau">Créneau horaire</label><input id="f-creneau" name="creneau" maxlength="120" value="<?= e($m['creneau']) ?>" placeholder="21h - 00h, week-end 15h-18h"></div>
   <fieldset class="field"><legend>Disponibilité cette semaine</legend><?= chip_group('inscription', INSCRIPTION, $m['inscription']) ?></fieldset>
-  <div class="field checks">
-    <label class="check"><input type="checkbox" name="helper" value="1"<?= (int) $m['helper'] ? ' checked' : '' ?>> Helper : je peux aider des joueurs moins avancés</label>
-    <label class="check"><input type="checkbox" name="clear_semaine" value="1"<?= (int) $m['clear_semaine'] ? ' checked' : '' ?>> J'ai déjà clear cette semaine</label>
-    <?php if ($isOfficer): ?>
-      <label class="check"><input type="checkbox" name="shot_caller" value="1"<?= (int) $m['shot_caller'] ? ' checked' : '' ?>> Shot caller</label>
-      <label class="check"><input type="checkbox" name="verifie" value="1"<?= (int) $m['verifie'] ? ' checked' : '' ?>> Infos vérifiées</label>
-      <?php if (!$self): ?><label class="check"><input type="checkbox" name="is_officer" value="1"<?= (int) $m['is_officer'] ? ' checked' : '' ?>> Officier</label><?php endif; ?>
-    <?php endif; ?>
-  </div>
+  <fieldset class="field checks">
+    <legend><?= $self ? 'Ce que je propose' : 'Ce que ' . e($m['pseudo']) . ' propose' ?></legend>
+    <label class="check"><input type="checkbox" name="helper" value="1"<?= (int) $m['helper'] ? ' checked' : '' ?>> Helper : <?= $self ? 'je peux' : 'peut' ?> aider des joueurs moins avancés</label>
+    <label class="check"><input type="checkbox" name="shot_caller" value="1"<?= (int) $m['shot_caller'] ? ' checked' : '' ?>> Shot caller : <?= $self ? 'je peux' : 'peut' ?> mener le raid et faire les annonces</label>
+    <label class="check"><input type="checkbox" name="clear_semaine" value="1"<?= (int) $m['clear_semaine'] ? ' checked' : '' ?>> <?= $self ? "J'ai déjà clear cette semaine" : 'A déjà clear cette semaine' ?></label>
+  </fieldset>
   <div class="field"><label for="f-notes">Notes / contraintes</label><textarea id="f-notes" name="notes" rows="3" maxlength="600"><?= e($m['notes']) ?></textarea></div>
-  <?php if (!$isOfficer): ?><p class="hint">Changer ton rôle, ta connaissance ou ta meilleure étape<?= $synced ? '' : ', ta classe, ton GS ou ton CP' ?> remet tes infos en attente de vérification par un officier.</p><?php endif; ?>
-  <p><button class="btn btn-gold" type="submit">Enregistrer le profil</button></p>
+  <?php if ($isOfficer): ?>
+    <section class="officer-box" aria-labelledby="perm-title">
+      <h2 id="perm-title">Permissions <span class="opt">visible seulement des officiers</span></h2>
+      <div class="checks">
+        <label class="check"><input type="checkbox" name="is_officer" value="1"<?= is_officer($m) ? ' checked' : '' ?><?= $self ? ' disabled' : '' ?>> Officier : gère tout (salles, membres, accès, listes du site)</label>
+        <label class="check"><input type="checkbox" name="is_raid_lead" value="1"<?= is_raid_lead($m) ? ' checked' : '' ?><?= $self ? ' disabled' : '' ?>> Raid lead : gère toutes les salles et consulte les profils, sans les modifier</label>
+      </div>
+      <?php if ($self): ?><p class="hint">Un autre officier doit changer tes propres permissions.</p><?php endif; ?>
+      <h3>Vérification</h3>
+      <div class="checks">
+        <label class="check"><input type="checkbox" name="verifie" value="1"<?= (int) $m['verifie'] ? ' checked' : '' ?>> Infos vérifiées par un officier</label>
+      </div>
+    </section>
+  <?php endif; ?>
+  <?php if (!$isOfficer && $self): ?><p class="hint">Changer ton rôle, ta connaissance ou ta meilleure étape<?= $synced ? '' : ', ta classe, ton GS ou ton CP' ?> remet tes infos en attente de vérification par un officier.</p><?php endif; ?>
+  <?php if (!$readOnly): ?><p><button class="btn btn-gold" type="submit">Enregistrer le profil</button></p><?php endif; ?>
+  </fieldset>
 </form>
 
 <?php if ($self): ?>

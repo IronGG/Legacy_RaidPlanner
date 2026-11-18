@@ -7,7 +7,7 @@ function page_header(string $title, string $active = '', bool $wide = false): vo
     $nav = [];
     if ($me) {
         $nav = ['rooms' => ['index.php', 'Salles'], 'members' => ['members.php', 'Membres'], 'profile' => ['profile.php', 'Mon profil']];
-        if ((int) $me['is_officer']) {
+        if (is_officer($me)) {
             $nav['admin'] = ['admin.php', 'Officiers'];
         }
     } else {
@@ -100,6 +100,10 @@ function chip_group(string $name, array $options, ?string $current, bool $multi 
 function member_badges(array $m, bool $withStatus = true): string
 {
     $b = [];
+    // Un seul tag de permission : le plus élevé
+    $rank = member_rank($m);
+    if ($rank === 'officer') $b[] = '<span class="badge badge-officer">Officier</span>';
+    elseif ($rank === 'raid_lead') $b[] = '<span class="badge badge-lead">Raid lead</span>';
     if ((int) ($m['shot_caller'] ?? 0)) $b[] = '<span class="badge badge-gold">Shot caller</span>';
     if ((int) ($m['helper'] ?? 0)) $b[] = '<span class="badge">Helper</span>';
     if ((int) ($m['clear_semaine'] ?? 0)) $b[] = '<span class="badge badge-muted">Clear cette semaine</span>';
