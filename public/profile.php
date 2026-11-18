@@ -183,7 +183,7 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
   </div>
   <fieldset class="field"><legend>Jours dispo</legend><?= chip_group('jours', DAYS, null, true, member_days($m)) ?></fieldset>
   <div class="field"><label for="f-creneau">Créneau horaire</label><input id="f-creneau" name="creneau" maxlength="120" value="<?= e($m['creneau']) ?>" placeholder="21h - 00h, week-end 15h-18h"></div>
-  <fieldset class="field"><legend>Inscription cette semaine</legend><?= chip_group('inscription', INSCRIPTION, $m['inscription']) ?></fieldset>
+  <fieldset class="field"><legend>Disponibilité cette semaine</legend><?= chip_group('inscription', INSCRIPTION, $m['inscription']) ?></fieldset>
   <div class="field checks">
     <label class="check"><input type="checkbox" name="helper" value="1"<?= (int) $m['helper'] ? ' checked' : '' ?>> Helper : je peux aider des joueurs moins avancés</label>
     <label class="check"><input type="checkbox" name="clear_semaine" value="1"<?= (int) $m['clear_semaine'] ? ' checked' : '' ?>> J'ai déjà clear cette semaine</label>

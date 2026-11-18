@@ -39,7 +39,7 @@ page_header('Membres', 'members', true);
   <input type="search" name="q" value="<?= e($f['q']) ?>" placeholder="Pseudo" aria-label="Rechercher un pseudo">
   <?= select_field('classe', opts('classe', null, true), $f['classe'], 'Toutes les classes') ?>
   <?= select_field('role', opts('role', null, true), $f['role'], 'Tous les rôles') ?>
-  <?= select_field('inscription', INSCRIPTION, $f['inscription'], 'Toutes les inscriptions') ?>
+  <?= select_field('inscription', INSCRIPTION, $f['inscription'], 'Toutes les disponibilités') ?>
   <input type="hidden" name="tri" value="<?= e($sort) ?>">
   <button class="btn btn-ghost" type="submit">Filtrer</button>
   <?php if (array_filter($f)): ?><a href="members.php">Effacer</a><?php endif; ?>
@@ -58,7 +58,7 @@ page_header('Membres', 'members', true);
       <th>Objectif</th>
       <th>Jours</th>
       <th>Créneau</th>
-      <th>Inscription</th>
+      <th>Disponibilité</th>
       <th>Vérifié</th>
     </tr>
   </thead>

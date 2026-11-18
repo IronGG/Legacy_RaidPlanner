@@ -119,6 +119,20 @@ function fmt_time(mixed $ts): string
     return $ts ? local_dt((int) $ts)->format('H:i') : '';
 }
 
+/** « 3 joueurs », « 1 joueur ». */
+function plural(int $n, string $word): string
+{
+    return $n . ' ' . $word . ($n > 1 ? 's' : '');
+}
+
+/** « A », « A et B », « A, B et C ». */
+function names_list(array $names): string
+{
+    $names = array_values($names);
+    $last = array_pop($names);
+    return $names ? implode(', ', $names) . ' et ' . $last : (string) $last;
+}
+
 /** Heure seule si c'est aujourd'hui, sinon jour et heure (salles ouvertes plusieurs jours). $short : « 18/11 15:38 ». */
 function fmt_when(mixed $ts, bool $short = false): string
 {

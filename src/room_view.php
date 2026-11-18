@@ -266,6 +266,9 @@ function render_room_live(array $room, array $me): void
         <section class="manage">
           <h2>Gestion</h2>
           <div class="manage-row">
+            <a class="btn btn-ghost span-2" href="room_edit.php?r=<?= e(rawurlencode($room['slug'])) ?>">Modifier la salle</a>
+          </div>
+          <div class="manage-row">
             <form method="post" action="<?= $action ?>"><?= csrf_field() ?><input type="hidden" name="action" value="extend"><input type="hidden" name="minutes" value="30"><button class="btn btn-ghost" type="submit"><?= $phase === 'open' ? 'Prolonger de 30 min' : 'Rouvrir 30 min' ?></button></form>
             <?php if ($phase === 'open'): ?>
               <form method="post" action="<?= $action ?>"><?= csrf_field() ?><input type="hidden" name="action" value="close_join"><button class="btn btn-ghost" type="submit">Clore les inscriptions</button></form>

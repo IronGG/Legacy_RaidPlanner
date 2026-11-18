@@ -17,8 +17,10 @@ return [
     'join_windows'        => [15 => '15 min', 30 => '30 min', 60 => '1 h', 120 => '2 h', 180 => '3 h', 360 => '6 h', 1440 => '24 h', 4320 => '3 jours', 10080 => '7 jours'],
     'default_join_window' => 30,
 
-    // Un joueur ne peut être que dans une seule salle active à la fois (comme une room de jeu)
-    'one_room_per_member' => true,
+    // false : un joueur peut être dans plusieurs salles à la fois. Quand une salle réussit son clear, ses titulaires
+    // quittent d'eux-mêmes les autres salles qui n'acceptent pas les joueurs déjà clear.
+    // true : une seule salle active à la fois (comme une room de jeu).
+    'one_room_per_member' => false,
 
     // Qui peut créer une salle : 'all' (tout membre connecté) ou 'officers'
     'room_creation' => 'all',

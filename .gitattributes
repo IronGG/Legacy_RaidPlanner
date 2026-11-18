@@ -1,0 +1,7 @@
+# Fichiers laissés hors du zip de déploiement (package.bat / git archive) : inutiles sur le serveur
+.gitattributes export-ignore
+.dockerignore export-ignore
+Dockerfile export-ignore
+docker-compose.yml export-ignore
+start.bat export-ignore
+package.bat export-ignore

@@ -158,18 +158,33 @@ function pepper_ensure(): bool
     if (!is_dir(dirname($path))) mkdir(dirname($path), 0700, true);
     $fh = @fopen($path, 'x'); // 'x' : échoue si une autre requête vient de la créer
     if ($fh === false) return false;
-    $key = base64_encode(random_bytes(32));
-    fwrite($fh, "<?php\n// Poivre des mots de passe de GuildRaid. NE PAS MODIFIER NI SUPPRIMER : sans cette clé, plus personne\n"
-        . "// ne peut se connecter. Garde-en une copie à part (gestionnaire de mots de passe), pas avec les sauvegardes.\n"
-        . "return '$key';\n");
+    fwrite($fh, pepper_file_content());
     fclose($fh);
     @chmod($path, 0600);
     return true;
 }
 
-function pepper(): string
+/** Contenu d'un fichier de clé neuf (32 octets aléatoires, en base64). */
+function pepper_file_content(): string
+{
+    $key = base64_encode(random_bytes(32));
+    return "<?php\n// Poivre des mots de passe de GuildRaid. NE PAS MODIFIER NI SUPPRIMER : sans cette clé, plus personne\n"
+        . "// ne peut se connecter. Garde-en une copie à part (gestionnaire de mots de passe), pas avec les sauvegardes.\n"
+        . "// Pour en changer : php bin/pepper.php rotate\n"
+        . "return '$key';\n";
+}
+
+/** Empreinte courte de la clé : sert à vérifier qu'elle n'a pas changé, sans la montrer. */
+function pepper_fingerprint(): string
+{
+    return substr(hash('sha256', 'guildraid-pepper-id' . pepper()), 0, 12);
+}
+
+/** $reload : relit le fichier (après un changement de clé dans le même processus). */
+function pepper(bool $reload = false): string
 {
     static $key = null;
+    if ($reload) $key = null;
     if ($key !== null) return $key;
     pepper_ensure();
     $path = pepper_path();

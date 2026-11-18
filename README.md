@@ -24,8 +24,12 @@ Autres règles (reprises de l'Excel) :
 - un joueur déjà clear cette semaine ne peut pas rejoindre, sauf si la salle accepte les helpers ;
 - un joueur « Indisponible » ne peut pas rejoindre ;
 - GS minimum facultatif par salle ;
-- un joueur n'est que dans une salle active à la fois (réglable dans `config.php`) ;
-- le chef peut prolonger / rouvrir 30 min, clore les inscriptions, passer quelqu'un en réserve, le remonter, le retirer.
+- un joueur peut être dans plusieurs salles à la fois. Quand une salle réussit son clear, ses titulaires quittent
+  d'eux-mêmes les autres salles qui n'acceptent pas les joueurs déjà clear, et leur place va à la réserve
+  (`one_room_per_member` dans `config.php` pour revenir à une seule salle à la fois) ;
+- le chef peut prolonger / rouvrir 30 min, clore les inscriptions, passer quelqu'un en réserve, le remonter, le retirer ;
+- « Modifier la salle » (chef et officiers) reprend le formulaire de création sans retirer personne : on ne peut pas
+  descendre sous le nombre de joueurs déjà dans le groupe ou la réserve, et les places supprimées sont replacées.
 
 ### Places du groupe
 
@@ -142,10 +146,15 @@ Le site ne propose volontairement aucun téléchargement de la base : on la réc
 - Ces copies sont sur le même serveur : télécharge-en une de temps en temps (SFTP) pour en avoir une ailleurs.
 - Restaurer : remplace `data/guildraid.sqlite` sur le serveur (SFTP) par une sauvegarde. Il faut aussi le même
   `data/pepper.php` qu'au moment de la sauvegarde.
+- **Fabriquer le zip de déploiement** : commite tes changements, puis double-clique sur `package.bat`. Il crée
+  `../guildraid-app-infomaniak.zip` avec `git archive` : seuls les fichiers suivis par git y entrent (jamais `data/`,
+  la clé, `seed/membres.json` ni les icônes envoyées). `.gitattributes` écarte en plus `start.bat` et Docker.
 - **La clé de poivre `data/pepper.php`** est créée par `php bin/install.php` (ou au premier compte). Elle n'est
   volontairement dans aucune sauvegarde : récupère-la une fois par SFTP et garde-la à part (gestionnaire de mots de
   passe). Sans elle, plus aucun mot de passe ni code d'activation ne marche : il faudrait repartir d'une base vide.
-  Ne la modifie jamais. Ne l'envoie pas d'un PC vers le serveur : chaque installation a la sienne.
+  Ne la modifie jamais à la main. Ne l'envoie pas d'un PC vers le serveur : chaque installation a la sienne.
+  `php bin/pepper.php` affiche son état ; `php bin/pepper.php rotate` la change (tout le monde doit alors
+  réactiver son profil avec un nouveau code).
 - Mettre à jour l'app : remplace tous les fichiers **sauf** `data/` et `public/assets/classes/custom/`. Les évolutions
   de la base se font toutes seules au premier chargement.
 

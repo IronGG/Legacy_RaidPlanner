@@ -217,6 +217,91 @@ function room_create(array $data, array $me, bool $joinSelf): string
     return $slug;
 }
 
+/**
+ * Modifie les réglages d'une salle sans retirer personne. Moins de places : les titulaires des places supprimées
+ * sont replacés sur des places libres (de leur rôle si possible). Plus de places : la réserve monte.
+ */
+function room_update(string $slug, array $data, array $me): string
+{
+    return tx(function (PDO $pdo) use ($slug, $data, $me) {
+        $room = locked_room($slug, $me, true);
+        $members = room_members_of([(int) $room['id']])[(int) $room['id']];
+        $counts = slot_counts($members);
+        $cap = (int) $data['capacity'];
+        $res = (int) $data['reserve_capacity'];
+        if ($cap < $counts['main']) {
+            throw new RoomError('Le groupe compte ' . plural($counts['main'], 'joueur') . ' : il faut au moins ' . plural($counts['main'], 'place') . ". Passe d'abord des joueurs en réserve.");
+        }
+        if ($res < $counts['reserve']) {
+            throw new RoomError('La réserve compte ' . plural($counts['reserve'], 'joueur') . ' : il faut au moins ' . plural($counts['reserve'], 'place') . ' en réserve.');
+        }
+
+        // Ce qui change, pour le journal
+        $changes = [];
+        if ($data['title'] !== $room['title']) $changes[] = 'nom « ' . $data['title'] . ' »';
+        if ($data['etape'] !== $room['etape']) $changes[] = 'étape ' . ($data['etape'] ?? '—');
+        if ($data['objectif'] !== $room['objectif']) $changes[] = 'objectif ' . ($data['objectif'] ?? '—');
+        if ($data['starts_at'] !== ($room['starts_at'] === null ? null : (int) $room['starts_at'])) {
+            $changes[] = $data['starts_at'] ? 'départ ' . fmt_when($data['starts_at']) : 'sans heure de départ';
+        }
+        if ($data['join_until'] !== null) $changes[] = "inscriptions jusqu'à " . fmt_when($data['join_until']);
+        if ($cap !== (int) $room['capacity']) $changes[] = "places {$room['capacity']} → $cap";
+        if ($res !== (int) $room['reserve_capacity']) $changes[] = "réserve {$room['reserve_capacity']} → $res";
+        if ($data['min_gs'] !== ($room['min_gs'] === null ? null : (int) $room['min_gs'])) {
+            $changes[] = $data['min_gs'] ? 'GS minimum ' . fmt_gs($data['min_gs']) : 'sans GS minimum';
+        }
+        if ((int) $data['allow_cleared'] !== (int) $room['allow_cleared']) {
+            $changes[] = $data['allow_cleared'] ? 'joueurs déjà clear acceptés' : 'joueurs déjà clear refusés';
+        }
+        if ($data['notes'] !== $room['notes']) $changes[] = 'notes';
+        if (!$changes) return 'Rien à changer.';
+
+        q('UPDATE rooms SET title = ?, etape = ?, objectif = ?, starts_at = ?, capacity = ?, reserve_capacity = ?,
+                            min_gs = ?, allow_cleared = ?, notes = ? WHERE id = ?',
+            [$data['title'], $data['etape'], $data['objectif'], $data['starts_at'], $cap, $res,
+             $data['min_gs'], $data['allow_cleared'], $data['notes'], $room['id']]);
+        if ($data['join_until'] !== null) {
+            q('UPDATE rooms SET join_opened_at = ?, join_until = ? WHERE id = ?', [time(), $data['join_until'], $room['id']]);
+        }
+
+        // Places du groupe
+        $old = (int) $room['capacity'];
+        for ($i = $old; $i < $cap; $i++) {
+            q('INSERT OR IGNORE INTO room_slots (room_id, position) VALUES (?, ?)', [$room['id'], $i]);
+        }
+        if ($cap < $old) {
+            $slotRoles = array_slice(room_slot_roles($room), 0, $cap, true);
+            $occupied = [];
+            $moving = [];
+            foreach ($members as $m) {
+                if ($m['slot'] !== 'main') continue;
+                if ((int) $m['position'] < $cap) $occupied[(int) $m['position']] = $m;
+                else $moving[] = $m;
+            }
+            foreach ($moving as $m) {
+                q('UPDATE room_members SET position = NULL WHERE room_id = ? AND member_id = ?', [$room['id'], $m['id']]);
+            }
+            foreach ($moving as $m) {
+                $pos = best_free_slot($slotRoles, $occupied, $m['role'] ?: null);
+                if ($pos === null) { // aucune place de son rôle : n'importe quelle place libre (il y en a, $cap >= titulaires)
+                    for ($pos = 0; isset($occupied[$pos]); $pos++);
+                }
+                q('UPDATE room_members SET position = ? WHERE room_id = ? AND member_id = ?', [$pos, $room['id'], $m['id']]);
+                $occupied[$pos] = $m;
+            }
+            q('DELETE FROM room_slots WHERE room_id = ? AND position >= ?', [$room['id'], $cap]);
+        }
+
+        log_room($pdo, (int) $room['id'], 'Salle modifiée par ' . $me['pseudo'] . ' : ' . implode(', ', $changes) . '.');
+        $msg = 'Salle modifiée : ' . implode(', ', $changes) . '.';
+        $fresh = q('SELECT * FROM rooms WHERE id = ?', [$room['id']])->fetch();
+        if ($up = fill_from_reserve($pdo, $fresh)) {
+            $msg .= ' ' . names_list($up) . (count($up) > 1 ? ' montent' : ' monte') . ' de la réserve.';
+        }
+        return $msg;
+    });
+}
+
 /** $reserve = true : inscription volontaire en réserve, même s'il reste une place pour son rôle. */
 function room_join(string $slug, array $me, bool $reserve = false): string
 {
@@ -270,7 +355,7 @@ function room_standby(string $slug, array $me): string
         log_room($pdo, (int) $room['id'], $row['pseudo'] . ' laisse sa place et passe en réserve (volontaire).');
         $msg = 'Tu passes en réserve et ta place est libérée.';
         if ($up = fill_from_reserve($pdo, $room)) {
-            $msg .= ' ' . implode(', ', $up) . ' monte de la réserve.';
+            $msg .= ' ' . names_list($up) . (count($up) > 1 ? ' montent' : ' monte') . ' de la réserve.';
         }
         return $msg;
     });
@@ -289,7 +374,7 @@ function room_step_up(string $slug, array $me): string
         $up = fill_from_reserve($pdo, $room);
         if (in_array($row['pseudo'], $up, true)) {
             $others = array_values(array_diff($up, [$row['pseudo']]));
-            return 'Tu passes dans le groupe.' . ($others ? ' ' . implode(', ', $others) . ' monte aussi de la réserve.' : '');
+            return 'Tu passes dans le groupe.' . ($others ? ' ' . names_list($others) . (count($others) > 1 ? ' montent' : ' monte') . ' aussi de la réserve.' : '');
         }
         log_room($pdo, (int) $room['id'], $row['pseudo'] . ' attend une place dans le groupe.');
         return "Tu monteras dans le groupe dès qu'une place pour ton rôle se libère.";
@@ -311,7 +396,7 @@ function room_leave(string $slug, int $memberId, array $me): string
 
         $msg = $self ? 'Tu as quitté la salle.' : $row['pseudo'] . ' a été retiré de la salle.';
         if ($row['slot'] === 'main' && ($up = fill_from_reserve($pdo, $room))) {
-            $msg .= ' ' . implode(', ', $up) . ' monte de la réserve.';
+            $msg .= ' ' . names_list($up) . (count($up) > 1 ? ' montent' : ' monte') . ' de la réserve.';
         }
         return $msg;
     });
@@ -437,7 +522,7 @@ function room_set_slot_role(string $slug, int $position, ?string $role, array $m
         $msg = $role ? "Place $n : $role recherché" : "Place $n : ouverte à tous les rôles";
         log_room($pdo, (int) $room['id'], $msg . ' (' . $me['pseudo'] . ').');
         if ($up = fill_from_reserve($pdo, $room)) {
-            $msg .= '. ' . implode(', ', $up) . ' monte de la réserve';
+            $msg .= '. ' . names_list($up) . (count($up) > 1 ? ' montent' : ' monte') . ' de la réserve';
         }
         return $msg . '.';
     });
@@ -472,13 +557,44 @@ function room_finish(string $slug, bool $cleared, array $me): string
     return tx(function (PDO $pdo) use ($slug, $cleared, $me) {
         $room = locked_room($slug, $me, true);
         q("UPDATE rooms SET status = 'done', outcome = ?, closed_at = ? WHERE id = ?", [$cleared ? 'clear' : 'no_clear', time(), $room['id']]);
+        $msg = 'Salle terminée.';
         if ($cleared) {
             q("UPDATE members SET clear_semaine = 1, updated_at = ?
                            WHERE id IN (SELECT member_id FROM room_members WHERE room_id = ? AND slot = 'main')", [time(), $room['id']]);
+            $msg = 'Bravo pour le clear ! Les titulaires sont marqués « clear cette semaine ».';
+            if ($left = leave_rooms_after_clear($pdo, $room)) {
+                $msg .= ' ' . names_list($left) . (count($left) > 1 ? ' quittent' : ' quitte') . " les autres salles qui n'acceptent pas les joueurs déjà clear.";
+            }
         }
         log_room($pdo, (int) $room['id'], ($cleared ? 'Clear réussi' : 'Salle terminée sans clear') . ' (' . $me['pseudo'] . ').');
-        return $cleared ? 'Bravo pour le clear ! Les titulaires sont marqués « clear cette semaine ».' : 'Salle terminée.';
+        return $msg;
     });
+}
+
+/**
+ * Après un clear : les titulaires de la salle quittent les autres salles actives qui n'acceptent pas les joueurs
+ * déjà clear (règle de l'Excel). Leurs places libérées vont aux réservistes du bon rôle. Renvoie les pseudos concernés.
+ */
+function leave_rooms_after_clear(PDO $pdo, array $room): array
+{
+    $rows = q("SELECT rm.room_id, rm.member_id, rm.slot, m.pseudo
+               FROM room_members rm
+               JOIN rooms r ON r.id = rm.room_id AND r.status = 'active' AND r.allow_cleared = 0 AND r.id <> ?
+               JOIN members m ON m.id = rm.member_id
+               WHERE rm.member_id IN (SELECT member_id FROM room_members WHERE room_id = ? AND slot = 'main')",
+        [$room['id'], $room['id']])->fetchAll();
+    $who = [];
+    $freed = [];
+    foreach ($rows as $r) {
+        q('DELETE FROM room_members WHERE room_id = ? AND member_id = ?', [$r['room_id'], $r['member_id']]);
+        log_room($pdo, (int) $r['room_id'], $r['pseudo'] . ' a clear dans « ' . $room['title'] . ' » et quitte cette salle.');
+        $who[$r['pseudo']] = true;
+        if ($r['slot'] === 'main') $freed[(int) $r['room_id']] = true;
+    }
+    foreach (array_keys($freed) as $roomId) {
+        if ($other = q('SELECT * FROM rooms WHERE id = ?', [$roomId])->fetch()) fill_from_reserve($pdo, $other);
+    }
+    return array_keys($who);
 }
 
 function room_cancel(string $slug, array $me): string

@@ -238,6 +238,8 @@ p { margin: 0 0 .8em; }
 .manage-row form { margin: 0; }
 .manage-row .btn { width: 100%; padding: .6rem .5rem; font-size: .85rem; }
 .manage-row .span-2 { grid-column: 1 / -1; }
+.form-note { margin: -.3rem 0 1.1rem; }
+.form-actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
 .journal ol { list-style: none; margin: 0; padding: 0; font-size: .875rem; max-height: 260px; overflow: auto; }
 .journal li { padding: .3rem 0; border-top: 1px solid var(--rule); color: var(--mist); }
 .journal li:first-child { border-top: 0; }
