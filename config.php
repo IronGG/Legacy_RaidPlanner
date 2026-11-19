@@ -25,6 +25,11 @@ return [
     // Qui peut créer une salle : 'all' (tout membre connecté) ou 'officers' (officiers et raid leads)
     'room_creation' => 'all',
 
+    // Salles terminées ou annulées : « Salles récentes » sur la page Salles, « Historique complet » (history.php)
+    'recent_rooms_days'   => 3,
+    'recent_rooms_max'    => 10,   // au plus les X plus récentes ; le reste est dans l'historique
+    'history_days'        => 30,
+
     // Une salle active est archivée automatiquement X heures après son départ
     // (ou après la fin des inscriptions si aucune heure de départ n'est fixée)
     'archive_after_hours' => 12,

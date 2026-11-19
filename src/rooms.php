@@ -625,7 +625,7 @@ function rooms_for_index(): array
 {
     $rooms = q("SELECT r.*, m.pseudo AS leader_pseudo FROM rooms r LEFT JOIN members m ON m.id = r.leader_id
                 WHERE r.status = 'active' OR r.closed_at > ?
-                ORDER BY r.status <> 'active', COALESCE(r.starts_at, r.join_until), r.id", [time() - 3 * 86400])->fetchAll();
+                ORDER BY r.status <> 'active', COALESCE(r.starts_at, r.join_until), r.id", [time() - max(1, (int) (cfg('recent_rooms_days') ?? 3)) * 86400])->fetchAll();
     $ids = array_map(fn($r) => (int) $r['id'], $rooms);
     $members = room_members_of($ids);
     $slots = [];
@@ -643,6 +643,25 @@ function rooms_for_index(): array
         }
         $r['slot_roles'] = $roles;
     }
+    return $rooms;
+}
+
+/** Date d'une salle passée : son départ, sinon sa fermeture. */
+function room_date(array $room): int
+{
+    return (int) ($room['starts_at'] ?: ($room['closed_at'] ?: $room['created_at']));
+}
+
+/** Salles terminées ou annulées des « history_days » derniers jours, les plus récentes d'abord, avec leurs joueurs. */
+function rooms_history(): array
+{
+    $rooms = q("SELECT r.*, m.pseudo AS leader_pseudo FROM rooms r LEFT JOIN members m ON m.id = r.leader_id
+                WHERE r.status <> 'active' AND COALESCE(r.closed_at, r.created_at) > ?",
+        [time() - max(1, (int) (cfg('history_days') ?? 30)) * 86400])->fetchAll();
+    $members = room_members_of(array_map(fn($r) => (int) $r['id'], $rooms));
+    foreach ($rooms as &$r) $r['members'] = $members[(int) $r['id']];
+    unset($r);
+    usort($rooms, fn($a, $b) => [room_date($b), (int) $b['id']] <=> [room_date($a), (int) $a['id']]);
     return $rooms;
 }
 

@@ -114,6 +114,15 @@ function fmt_dt(mixed $ts): string
     return $days[(int) $d->format('w')] . ' ' . $d->format('j') . ' ' . $months[(int) $d->format('n') - 1] . ' à ' . $d->format('H:i');
 }
 
+/** « Mercredi 18 novembre » (titres de l'historique). */
+function fmt_day(mixed $ts): string
+{
+    $d = local_dt((int) $ts);
+    $days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    $months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    return ucfirst($days[(int) $d->format('w')]) . ' ' . $d->format('j') . ' ' . $months[(int) $d->format('n') - 1];
+}
+
 function fmt_time(mixed $ts): string
 {
     return $ts ? local_dt((int) $ts)->format('H:i') : '';

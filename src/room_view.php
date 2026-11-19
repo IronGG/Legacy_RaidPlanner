@@ -70,15 +70,29 @@ function render_room_list(array $rooms, array $me, string $type = 'all'): void
         render_room_card($room, $me);
     }
     if ($past) {
+        usort($past, fn($a, $b) => [room_date($b), (int) $b['id']] <=> [room_date($a), (int) $a['id']]);
+        $past = array_slice($past, 0, max(1, (int) (cfg('recent_rooms_max') ?? 10)));
         echo '<h2 class="section-title">Salles récentes</h2><div class="past-list">';
         foreach ($past as $room) {
-            $c = slot_counts($room['members']);
-            echo '<a class="past-row" href="room.php?r=' . e(rawurlencode($room['slug'])) . '"><span class="past-title">' . e($room['title']) . '</span>'
-                . '<span class="muted">' . e(room_is_raid($room) ? ($room['etape'] ?? '') : 'Donjon') . '</span><span class="muted">' . $c['main'] . '/' . (int) $room['capacity'] . '</span>'
-                . '<span class="status status-' . e(room_phase($room)) . ($room['outcome'] === 'clear' ? ' status-clear' : '') . '">' . e(phase_label($room)) . '</span></a>';
+            echo past_row($room, ucfirst(fmt_dt(room_date($room))));
         }
         echo '</div>';
     }
+    echo '<p class="history-link"><a class="btn btn-ghost" href="history.php' . ($type !== 'all' ? '?type=' . e($type) : '') . '">Historique complet</a>'
+        . ' <span class="muted small">' . (int) cfg('history_days') . ' derniers jours</span></p>';
+}
+
+/** Une ligne de salle passée : date, titre, étape (ou Donjon), joueurs, issue. */
+function past_row(array $room, string $when, bool $withLeader = false): string
+{
+    $c = slot_counts($room['members']);
+    return '<a class="past-row' . ($withLeader ? ' past-row-wide' : '') . '" href="room.php?r=' . e(rawurlencode($room['slug'])) . '">'
+        . '<span class="past-date muted">' . e($when) . '</span>'
+        . '<span class="past-title">' . e($room['title']) . '</span>'
+        . '<span class="past-etape muted">' . e(room_is_raid($room) ? ($room['etape'] ?? '') : 'Donjon') . '</span>'
+        . ($withLeader ? '<span class="past-leader muted">' . e($room['leader_pseudo'] ?? '—') . '</span>' : '')
+        . '<span class="past-count muted">' . $c['main'] . '/' . (int) $room['capacity'] . '</span>'
+        . '<span class="status status-' . e(room_phase($room)) . ($room['outcome'] === 'clear' ? ' status-clear' : '') . '">' . e(phase_label($room)) . '</span></a>';
 }
 
 function render_room_card(array $room, array $me): void

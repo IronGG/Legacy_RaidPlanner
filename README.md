@@ -11,6 +11,8 @@ Petite app web PHP pour organiser les raids de la légion, construite à partir 
 - **Salles** (comme des rooms de jeu en ligne) : un membre crée une salle avec une durée d'inscription
   (15 min à 24 h, ou jusqu'au départ). Les autres la rejoignent, la page se met à jour toute seule.
 - **Classes avec emblème** partout (grille de groupe, liste des salles, roster, choix de classe).
+- **Salles récentes** (les 10 dernières des 3 derniers jours, avec leur date) sous la liste, et **Historique complet** (`history.php`) : toutes
+  les salles terminées ou annulées des 30 derniers jours, par jour (`recent_rooms_max`, `recent_rooms_days` et `history_days` dans `config.php`).
 
 ## Règles des salles
 
