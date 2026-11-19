@@ -200,6 +200,56 @@ function migrate(PDO $pdo): void
         $pdo->exec('PRAGMA user_version = 8');
         $pdo->exec('COMMIT');
     }
+    if ($version < 9) {
+        // Wars de légion : inscriptions (rôle + statut), troupes, groupes et places organisés par les officiers
+        $pdo->exec('BEGIN IMMEDIATE');
+        $pdo->exec(<<<SQL
+            CREATE TABLE wars (
+                id           INTEGER PRIMARY KEY,
+                starts_at    INTEGER NOT NULL UNIQUE,
+                message      TEXT,
+                cancelled    INTEGER NOT NULL DEFAULT 0,
+                published_at INTEGER,
+                version      INTEGER NOT NULL DEFAULT 1,
+                updated_by   TEXT,
+                updated_at   INTEGER NOT NULL,
+                created_at   INTEGER NOT NULL
+            );
+            CREATE TABLE war_signups (
+                war_id     INTEGER NOT NULL REFERENCES wars(id) ON DELETE CASCADE,
+                member_id  INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                role       TEXT,
+                status     TEXT NOT NULL CHECK (status IN ('present','late','tentative','bench','absent')),
+                signed_at  INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                PRIMARY KEY (war_id, member_id)
+            );
+            CREATE TABLE war_troops (
+                id       INTEGER PRIMARY KEY,
+                war_id   INTEGER NOT NULL REFERENCES wars(id) ON DELETE CASCADE,
+                position INTEGER NOT NULL,
+                name     TEXT NOT NULL
+            );
+            CREATE INDEX war_troops_war ON war_troops (war_id, position);
+            CREATE TABLE war_groups (
+                id       INTEGER PRIMARY KEY,
+                troop_id INTEGER NOT NULL REFERENCES war_troops(id) ON DELETE CASCADE,
+                position INTEGER NOT NULL,
+                size     INTEGER NOT NULL DEFAULT 5 CHECK (size BETWEEN 1 AND 12)
+            );
+            CREATE INDEX war_groups_troop ON war_groups (troop_id, position);
+            CREATE TABLE war_places (
+                war_id    INTEGER NOT NULL REFERENCES wars(id) ON DELETE CASCADE,
+                group_id  INTEGER NOT NULL REFERENCES war_groups(id) ON DELETE CASCADE,
+                slot      INTEGER NOT NULL,
+                member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                PRIMARY KEY (group_id, slot),
+                UNIQUE (war_id, member_id)
+            );
+            SQL);
+        $pdo->exec('PRAGMA user_version = 9');
+        $pdo->exec('COMMIT');
+    }
 }
 
 /** Remplit les listes avec les valeurs de l'Excel, plus toute valeur déjà utilisée en base. */

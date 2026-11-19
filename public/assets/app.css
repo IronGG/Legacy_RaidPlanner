@@ -412,3 +412,137 @@ code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-siz
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ---- War : liste, réponse, compo des troupes ---- */
+.war-list { display: grid; gap: .7rem; }
+.war-card {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 1rem 1.2rem;
+  background: var(--abyss-2); border: 1px solid var(--rule); border-radius: var(--radius); color: var(--parchment); text-decoration: none;
+}
+.war-card:hover { border-color: var(--mist); color: var(--parchment); }
+.war-card h2 { margin: 0 0 .2rem; font-size: 1.2rem; }
+.war-card.is-cancelled { opacity: .6; }
+.war-card-msg { margin: .4rem 0 0; color: var(--mist); font-size: .9rem; }
+.war-card-side { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.war-live { color: var(--sage); font-weight: 600; }
+.war-cancelled { color: var(--ember); font-weight: 600; }
+.war-past { list-style: none; margin: 0; padding: 0; }
+.war-past li { display: flex; gap: 1.2rem; flex-wrap: wrap; padding: .45rem 0; border-top: 1px solid var(--rule); }
+.meta [data-deadline] b { color: var(--aether); font-variant-numeric: tabular-nums; }
+
+/* Réponse : statut courant et boutons */
+.war-my { display: inline-block; font: 600 .8rem/1 var(--sans); padding: .35rem .6rem; border-radius: 999px; border: 1px solid var(--rule); vertical-align: middle; }
+.war-my-present { color: var(--sage); border-color: rgba(134, 207, 162, .5); }
+.war-my-late { color: var(--gold); border-color: rgba(227, 184, 102, .5); }
+.war-my-tentative { color: var(--aether); border-color: rgba(114, 215, 232, .5); }
+.war-my-bench { color: var(--mist); }
+.war-my-absent { color: var(--ember); border-color: #6b3a3a; }
+.war-my-none { color: var(--gold-ink); background: var(--gold); border-color: var(--gold); }
+.war-answer h2 { display: flex; gap: .7rem; align-items: center; flex-wrap: wrap; font-size: 1.15rem; }
+.war-answer .field { margin-bottom: .9rem; }
+.war-status-btns { display: flex; flex-wrap: wrap; gap: .45rem; }
+.war-btn { background: transparent; color: var(--parchment); border-color: var(--rule); }
+.war-btn:hover { border-color: var(--mist); color: var(--parchment); }
+.war-btn-present.is-current { background: var(--sage); border-color: var(--sage); color: #0f2418; }
+.war-btn-late.is-current { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
+.war-btn-tentative.is-current { background: var(--aether); border-color: var(--aether); color: #0c2328; }
+.war-btn-bench.is-current { background: var(--mist); border-color: var(--mist); color: var(--abyss); }
+.war-btn-absent.is-current { background: var(--ember); border-color: var(--ember); color: #2a0d0a; }
+.war-btn.is-current { font-weight: 700; }
+
+.war-message { padding: .8rem 1rem; margin: 0 0 1rem; border-left: 3px solid var(--gold); background: var(--abyss-2); border-radius: var(--radius); font-weight: 600; }
+.war-mine { margin: 0 0 1rem; }
+.war-mine p { margin: 0; }
+
+/* Outils des officiers */
+.war-tools { display: grid; gap: .6rem; }
+.war-tools-row { display: flex; flex-wrap: wrap; gap: .5rem .8rem; align-items: center; }
+.war-tools-row form { margin: 0; }
+.war-pub { margin: 0 auto 0 0; }
+.war-last { margin: 0; }
+.war-pop { position: relative; }
+.war-pop > summary { list-style: none; display: inline-block; }
+.war-pop > summary::-webkit-details-marker { display: none; }
+.war-pop-body {
+  position: absolute; z-index: 20; top: calc(100% + .35rem); left: 0; display: grid; gap: .45rem; width: min(86vw, 340px);
+  padding: .8rem; background: var(--abyss-3); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
+}
+.war-pop-body input, .war-pop-body select, .war-pop-body textarea { width: 100%; }
+.war-troop-head .war-pop-body { left: auto; right: 0; }
+
+/* Compo : « À placer » à gauche, troupes à droite */
+.war-board { display: grid; grid-template-columns: 1fr; gap: 1.2rem; align-items: start; margin-bottom: 2rem; }
+.war-board.war-editing { grid-template-columns: 260px minmax(0, 1fr); }
+.war-pool {
+  position: sticky; top: .8rem; max-height: calc(100vh - 1.6rem); overflow: auto; padding: .9rem; border-radius: var(--radius);
+  background: var(--abyss-2); border: 1px solid var(--rule);
+}
+.war-pool h2 { font-size: 1.1rem; margin-bottom: .3rem; }
+.war-pool h3 { margin: .9rem 0 .35rem; font: 600 .8rem/1.2 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--role, var(--mist)); }
+.war-pool .hint { margin: 0 0 .4rem; font-size: .8rem; }
+.war-pool.drop-hover { outline-offset: -4px; }
+.war-chips { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.war-chip, .war-slot {
+  display: flex; align-items: center; gap: .5rem; min-height: 2.1rem; padding: .2rem .5rem; border-radius: 4px;
+  background: var(--abyss-3); border-left: 3px solid var(--role, var(--rule)); font-size: .9rem; user-select: none;
+}
+.war-chip .emblem, .war-slot .emblem { width: 22px; height: 22px; }
+.war-name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.war-st { margin: 0; font-size: .68rem; padding: .08rem .4rem; }
+.war-st-late { color: var(--gold); border-color: rgba(227, 184, 102, .5); }
+.war-st-tentative { color: var(--aether); border-color: rgba(114, 215, 232, .5); }
+.war-st-bench { color: var(--mist); }
+
+.war-troop { margin-bottom: 1.6rem; }
+.war-troop-head { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-bottom: .7rem; }
+.war-troop-head h2 {
+  flex: 1; display: flex; align-items: center; gap: .8rem; margin: 0; font: 600 .85rem/1.2 var(--sans); letter-spacing: .12em;
+  text-transform: uppercase; color: var(--parchment);
+}
+.war-troop-head h2::before, .war-troop-head h2::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+.war-troop-head h2::before { flex: 0 0 1.2rem; }
+.war-troop-head h2 small { color: var(--mist); letter-spacing: 0; font-weight: 400; }
+.war-tools-inline { display: flex; gap: .3rem; align-items: center; flex-wrap: wrap; }
+.war-tools-inline form { margin: 0; }
+.war-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem 1.2rem; }
+.war-group header { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .35rem; }
+.war-group h3 { margin: 0; font: 600 .95rem/1.2 var(--sans); color: var(--mist); }
+.war-group h3 small { font-weight: 400; margin-left: .3rem; font-variant-numeric: tabular-nums; }
+.war-group-tools { display: flex; gap: .2rem; opacity: .55; transition: opacity .15s; }
+.war-group:hover .war-group-tools, .war-group-tools:focus-within { opacity: 1; }
+.war-group-tools form { margin: 0; }
+.icon-btn {
+  width: 1.6rem; height: 1.6rem; padding: 0; border-radius: 4px; border: 1px solid var(--rule); background: var(--abyss);
+  color: var(--parchment); font: 600 .95rem/1 var(--sans); cursor: pointer;
+}
+.icon-btn:hover { border-color: var(--mist); }
+.icon-btn.mini-danger { color: var(--ember); }
+.war-slots { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.war-slot-empty { background: rgba(255, 255, 255, .025); border-left-color: transparent; }
+.war-editing .war-slot-empty { border: 1px dashed rgba(154, 162, 192, .22); border-left-width: 1px; }
+.war-slot.is-me { box-shadow: inset 0 0 0 1px var(--aether); }
+.war-slot.is-me .war-name { color: var(--aether); }
+.picking .war-slot-empty { border-color: rgba(114, 215, 232, .45); }
+.war-add-troop { margin: 0; }
+
+/* Réponses façon Raid-Helper */
+.war-summary { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+.war-summary h2 small, .war-line h3 b, .war-role h3 b, .war-noanswer b { font-family: var(--sans); font-size: .95rem; color: var(--mist); font-weight: 400; }
+.war-roles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem 1.5rem; margin: .8rem 0 1rem; }
+.war-role h3, .war-line h3 { margin: 0 0 .4rem; font: 600 .95rem/1.2 var(--sans); color: var(--role, var(--parchment)); }
+.war-names { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+.war-names li { display: flex; align-items: center; gap: .45rem; font-size: .92rem; }
+.war-names .emblem { width: 20px; height: 20px; }
+.war-names-inline { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; }
+.war-line { margin: 0 0 .9rem; }
+.war-noanswer summary { cursor: pointer; color: var(--mist); margin-bottom: .5rem; }
+
+@media (max-width: 860px) {
+  .war-board.war-editing { grid-template-columns: 1fr; }
+  .war-pool { position: static; max-height: none; }
+  .war-groups { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+@media (max-width: 560px) {
+  .war-editing .war-groups { grid-template-columns: 1fr; }  /* officier au téléphone : un groupe par ligne, noms entiers */
+  .war-group-tools { opacity: 1; }
+}

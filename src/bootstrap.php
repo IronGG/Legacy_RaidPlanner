@@ -9,6 +9,7 @@ require __DIR__ . '/lists.php';
 require __DIR__ . '/db.php';
 require __DIR__ . '/auth.php';
 require __DIR__ . '/rooms.php';
+require __DIR__ . '/wars.php';
 require __DIR__ . '/options.php';
 require __DIR__ . '/aion.php';
 require __DIR__ . '/backup.php';
@@ -16,6 +17,7 @@ require __DIR__ . '/background.php';
 require __DIR__ . '/weekly.php';
 require __DIR__ . '/view.php';
 require __DIR__ . '/room_view.php';
+require __DIR__ . '/war_view.php';
 
 date_default_timezone_set(cfg('timezone'));
 mb_internal_encoding('UTF-8');

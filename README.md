@@ -46,6 +46,26 @@ On peut aussi s'inscrire volontairement en réserve (« M'inscrire en réserve �
 
 Pour déplacer quelqu'un : glisser-déposer, ou clic sur le joueur puis clic sur la place (marche au téléphone). Sur une place occupée, les deux joueurs échangent. Sur la réserve, le joueur y passe. Un chef peut forcer un joueur sur une place d'un autre rôle : il garde un badge « Place X » pour que ça se voie. Échap annule une sélection.
 
+## Wars de légion (onglet War)
+
+Les wars sont créées toutes seules chaque semaine, le **jeudi et le samedi à 21:00** (`war_schedule` dans `config.php`),
+7 jours à l'avance (`war_days_ahead`). Aucune tâche planifiée : elles apparaissent à la première visite de l'onglet War.
+
+- **Membres** : pour chaque war, ils choisissent leur rôle et répondent **Présent**, **En retard**, **Provisoire**, **Banc**
+  ou **Absent**, jusqu'à la fin de la war (2 h après le début, `war_length_minutes`) pour les retardataires. La page affiche
+  les réponses par rôle, le banc et les absents, comme Raid-Helper. Ils voient les troupes et leur place **seulement une fois
+  la compo publiée**, puis chaque changement en direct.
+- **Officiers et admins** : ils organisent les troupes à plusieurs en même temps ; la page se met à jour toutes les 2 s
+  (`war_poll_ms`) et indique qui a fait le dernier changement. Chaque war démarre avec « Troupe 1 », « Troupe 2 » et
+  « Retardataires », de 4 groupes de 5 (`war_troops`, `war_group_size`).
+  - Glisser un joueur de « À placer » vers une place, ou clic sur le joueur puis clic sur la place (téléphone).
+    Sur une place occupée, les deux échangent. Déposer un joueur dans « À placer » le sort de sa troupe.
+  - Troupes : renommer, monter / descendre, ajouter un groupe, supprimer, ajouter une troupe de 20.
+    Groupes : une place de plus ou de moins, supprimer. Ce qui est supprimé renvoie les joueurs dans « À placer ».
+  - **Publier la compo** / Masquer, **Reprendre la compo** de la war précédente (les absents laissent leur place vide),
+    Tout remettre à placer, Message affiché en haut, **Répondre pour un membre** (réponse donnée sur Discord), Annuler la war.
+- Un joueur qui passe Absent quitte sa place. Les groupes sont numérotés à la suite sur toutes les troupes (Groupe 1 à 12).
+
 ## Lancer l'app
 
 ### Avec Docker (le plus simple)
@@ -62,7 +82,7 @@ La base SQLite vit dans le volume `guildraid-data`.
 
 1. Installe PHP une fois : `winget install --id PHP.PHP.8.3 -e`, puis ferme et rouvre le terminal.
 2. Double-clique sur `start.bat` (ou lance-le dans le terminal). Il charge les extensions nécessaires,
-   crée la base et ton compte de chef de légion au premier lancement, puis ouvre l'app sur http://localhost:8080.
+   crée la base et ton compte admin au premier lancement, puis ouvre l'app sur http://localhost:8080.
 
 ### Sans Docker (Linux / macOS / autre)
 
@@ -92,7 +112,7 @@ Envoie `seed/membres.json` sur le serveur juste pour l'import, puis supprime-le.
 
 ## Permissions
 
-| | Membre | Raid lead | Officier | Chef de légion |
+| | Membre | Raid lead | Officier | Admin |
 |---|---|---|---|---|
 | Rejoindre les salles, modifier son propre profil | Oui | Oui | Oui | Oui |
 | Gérer **toutes** les salles (créer, modifier, déplacer, retirer, terminer) | Seulement les siennes | Oui | Oui | Oui |
@@ -101,25 +121,26 @@ Envoie `seed/membres.json` sur le serveur juste pour l'import, puis supprime-le.
 | Donner ou retirer le rang de raid lead | Non | Non | Oui | Oui |
 | Retirer de la légion, réinitialiser l'accès | Non | Non | Membres et raid leads | Membres, raid leads et officiers |
 | Donner ou retirer le rang d'officier | Non | Non | Non | Oui |
-| Nommer d'autres chefs de légion | Non | Non | Non | Oui |
+| Nommer d'autres admins | Non | Non | Non | Oui |
+| Organiser les wars (troupes, publication) | Non | Non | Oui | Oui |
 
 Les rangs se changent dans le profil du membre, section **Permissions** (visible seulement des officiers ; on ne
-peut pas changer ses propres permissions). Un officier n'agit jamais sur un autre officier ni sur un chef de légion,
-et un chef n'agit pas sur un autre chef : pas de retrait de la légion, pas de code de réinitialisation (il permettrait
+peut pas changer ses propres permissions). Un officier n'agit jamais sur un autre officier ni sur un admin,
+et un admin n'agit pas sur un autre admin : pas de retrait de la légion, pas de code de réinitialisation (il permettrait
 de prendre le compte), pas de changement de rang.
 
-Il peut y avoir plusieurs **chefs de légion**. Le premier est désigné par `php bin/install.php Pseudo`. Ensuite, un chef
-en nomme d'autres depuis leur profil (bouton « Nommer chef de légion », avec confirmation) ; il garde son rang. Le membre
-doit avoir activé son profil. Retirer le rang d'un chef (il reste officier) se fait en SSH :
-`php bin/install.php --retirer Pseudo`, refusé pour le dernier chef. `php bin/install.php` avec son propre pseudo sert
-aussi à retrouver l'accès, car personne ne peut réinitialiser celui d'un chef depuis le site.
+Il peut y avoir plusieurs **admins**. Le premier est désigné par `php bin/install.php Pseudo`. Ensuite, un admin
+en nomme d'autres depuis leur profil (bouton « Nommer admin », avec confirmation) ; il garde son rang. Le membre
+doit avoir activé son profil. Retirer le rang d'un admin (il reste officier) se fait en SSH :
+`php bin/install.php --retirer Pseudo`, refusé pour le dernier admin. `php bin/install.php` avec son propre pseudo sert
+aussi à retrouver l'accès, car personne ne peut réinitialiser celui d'un admin depuis le site.
 
-Chaque membre porte le tag de son rang le plus élevé : « Chef de légion », « Officier » ou « Raid lead ». Helper,
+Chaque membre porte le tag de son rang le plus élevé : « Admin », « Officier » ou « Raid lead ». Helper,
 shot caller et « clear cette semaine » sont des choix du joueur, dans « Ce que je propose ».
 
 ## Premiers pas
 
-1. `php bin/install.php TonPseudo` te passe chef de légion et affiche un code d'activation.
+1. `php bin/install.php TonPseudo` te passe admin et affiche un code d'activation.
 2. Active ton compte avec ce code, puis va dans **Officiers**.
 3. Pour chaque membre importé, clique **Générer un code** et envoie-le en MP sur Discord avec le lien de
    `activate.php`. Les nouveaux joueurs peuvent aussi s'inscrire eux-mêmes via **S'inscrire**.
@@ -199,7 +220,7 @@ Le site ne propose volontairement aucun téléchargement de la base : on la réc
 
 ```
 config.php            réglages
-bin/install.php       création de la base + chef de légion
+bin/install.php       création de la base + premier admin
 seed/membres.json     membres extraits de l'Excel (import au premier lancement)
 data/                 base SQLite (créée automatiquement)
 src/                  logique : base, authentification, salles, rendu

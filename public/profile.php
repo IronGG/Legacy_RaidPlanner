@@ -23,23 +23,23 @@ if (is_post() && $readOnly) {
     redirect($selfUrl);
 }
 
-// Nommer un autre chef de légion depuis son profil (confirmé dans le navigateur). Les chefs actuels gardent leur rang.
+// Nommer un autre admin depuis son profil (confirmé dans le navigateur). Les admins actuels gardent leur rang.
 if (is_post() && ($_POST['form'] ?? '') === 'make_leader' && !$self) {
     if (!is_leader($me)) {
-        flash('error', 'Seul un chef de légion peut nommer un autre chef.');
+        flash('error', 'Seul un admin peut nommer un autre admin.');
     } elseif (!$m['password_hash']) {
         flash('error', $m['pseudo'] . ' doit d\'abord activer son profil.');
     } elseif (!is_leader($m)) {
         make_leader($m);
-        flash('ok', $m['pseudo'] . ' est maintenant chef de légion.');
+        flash('ok', $m['pseudo'] . ' est maintenant admin.');
     }
     redirect($selfUrl);
 }
 
 if (is_post() && ($_POST['form'] ?? '') === 'delete' && $isOfficer && !$self) {
     if (!can_act_on($me, $m)) {
-        flash('error', is_leader($m) ? 'Un chef de légion ne peut pas être retiré de la légion depuis le site.'
-            : 'Seul un chef de légion peut retirer un officier de la légion.');
+        flash('error', is_leader($m) ? 'Un admin ne peut pas être retiré de la légion depuis le site.'
+            : 'Seul un admin peut retirer un officier de la légion.');
         redirect($selfUrl);
     }
     q('DELETE FROM members WHERE id = ?', [$m['id']]);
@@ -111,7 +111,7 @@ if (is_post() && ($_POST['form'] ?? '') === 'profile') {
     $new['shot_caller'] = in_bool('shot_caller'); // choix du joueur, comme helper
     if ($isOfficer) {
         $new['verifie'] = in_bool('verifie');
-        // Jamais ses propres permissions. Raid lead : sur un rang inférieur au sien. Officier : un chef de légion.
+        // Jamais ses propres permissions. Raid lead : sur un rang inférieur au sien. Officier : un admin.
         // Une case non modifiable n'est pas envoyée par le navigateur : on ne touche alors pas à la colonne.
         if (can_act_on($me, $m)) {
             $new['is_raid_lead'] = in_bool('is_raid_lead');
@@ -232,16 +232,16 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
       $canOfficer = can_grant_officer($me, $m); ?>
     <section class="officer-box" aria-labelledby="perm-title">
       <h2 id="perm-title">Permissions <span class="opt">visible seulement des officiers</span></h2>
-      <?php if (is_leader($m)): ?><p><span class="badge badge-leader">Chef de légion</span> Tous les droits d'un officier ; seuls les chefs de légion donnent ou retirent le rang d'officier et nomment d'autres chefs.</p><?php endif; ?>
+      <?php if (is_leader($m)): ?><p><span class="badge badge-leader">Admin</span> Tous les droits d'un officier ; seuls les admins donnent ou retirent le rang d'officier et nomment d'autres admins.</p><?php endif; ?>
       <div class="checks">
         <label class="check"><input type="checkbox" name="is_officer" value="1"<?= is_officer($m) ? ' checked' : '' ?><?= $canOfficer ? '' : ' disabled' ?>> Officier : gère les salles, les membres, les accès et les listes du site</label>
         <label class="check"><input type="checkbox" name="is_raid_lead" value="1"<?= is_raid_lead($m) ? ' checked' : '' ?><?= $canRank ? '' : ' disabled' ?>> Raid lead : gère toutes les salles et consulte les profils, sans les modifier</label>
       </div>
-      <?php if ($self && is_leader($m)): ?><p class="hint">Pour nommer un autre chef de légion, ouvre son profil depuis la page Membres.</p>
-      <?php elseif ($self): ?><p class="hint">Seul un chef de légion peut changer tes permissions.</p>
-      <?php elseif (is_leader($m)): ?><p class="hint">Un chef de légion ne peut pas retirer le rang d'un autre chef depuis le site.</p>
-      <?php elseif (!$canRank): ?><p class="hint">Seul un chef de légion peut changer les permissions d'un officier.</p>
-      <?php elseif (!$canOfficer): ?><p class="hint">Seul un chef de légion donne ou retire le rang d'officier.</p><?php endif; ?>
+      <?php if ($self && is_leader($m)): ?><p class="hint">Pour nommer un autre admin, ouvre son profil depuis la page Membres.</p>
+      <?php elseif ($self): ?><p class="hint">Seul un admin peut changer tes permissions.</p>
+      <?php elseif (is_leader($m)): ?><p class="hint">Un admin ne peut pas retirer le rang d'un autre admin depuis le site.</p>
+      <?php elseif (!$canRank): ?><p class="hint">Seul un admin peut changer les permissions d'un officier.</p>
+      <?php elseif (!$canOfficer): ?><p class="hint">Seul un admin donne ou retire le rang d'officier.</p><?php endif; ?>
       <h3>Vérification</h3>
       <div class="checks">
         <label class="check"><input type="checkbox" name="verifie" value="1"<?= (int) $m['verifie'] ? ' checked' : '' ?>> Infos vérifiées par un officier</label>
@@ -255,15 +255,15 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
 
 <?php if (!$self && is_leader($me) && !is_leader($m)): ?>
   <form method="post" class="form form-narrow" action="<?= e($selfUrl) ?>"
-        data-confirm="<?= e('Nommer ' . $m['pseudo'] . " chef de légion ?\n\n" . $m['pseudo'] . " aura les mêmes droits que toi, et aucun chef ne pourra lui retirer ce rang depuis le site.") ?>">
+        data-confirm="<?= e('Nommer ' . $m['pseudo'] . " admin ?\n\n" . $m['pseudo'] . " aura les mêmes droits que toi, et aucun admin ne pourra lui retirer ce rang depuis le site.") ?>">
     <?= csrf_field() ?><input type="hidden" name="form" value="make_leader">
-    <h2>Chef de légion</h2>
+    <h2>Admin</h2>
     <?php if ($m['password_hash']): ?>
-      <p class="hint">Nomme <?= e($m['pseudo']) ?> chef de légion : mêmes droits que toi, et tu gardes ton rang.</p>
-      <p><button class="btn btn-gold" type="submit">Nommer chef de légion</button></p>
+      <p class="hint">Nomme <?= e($m['pseudo']) ?> admin : mêmes droits que toi, et tu gardes ton rang.</p>
+      <p><button class="btn btn-gold" type="submit">Nommer admin</button></p>
     <?php else: ?>
-      <p class="hint"><?= e($m['pseudo']) ?> doit d'abord activer son profil avant de pouvoir être nommé chef de légion.</p>
-      <p><button class="btn btn-gold" type="submit" disabled>Nommer chef de légion</button></p>
+      <p class="hint"><?= e($m['pseudo']) ?> doit d'abord activer son profil avant de pouvoir être nommé admin.</p>
+      <p><button class="btn btn-gold" type="submit" disabled>Nommer admin</button></p>
     <?php endif; ?>
   </form>
 <?php endif; ?>
@@ -282,6 +282,6 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
     <p><button class="btn btn-danger" type="submit">Retirer de la légion</button></p>
   </form>
 <?php elseif ($isOfficer): ?>
-  <p class="hint"><?= is_leader($m) ? 'Un chef de légion ne peut pas être retiré de la légion depuis le site.' : 'Seul un chef de légion peut retirer un officier de la légion.' ?></p>
+  <p class="hint"><?= is_leader($m) ? 'Un admin ne peut pas être retiré de la légion depuis le site.' : 'Seul un admin peut retirer un officier de la légion.' ?></p>
 <?php endif; ?>
 <?php page_footer();

@@ -22,8 +22,8 @@ if (is_post()) {
             if ($m && !can_act_on($me, $m)) {
                 // Un code permet de choisir un nouveau mot de passe, donc de prendre le compte : jamais sur son rang ou au-dessus.
                 flash('error', (int) $m['id'] === (int) $me['id'] ? 'Change ton mot de passe dans « Mon profil ».'
-                    : (is_leader($m) ? "L'accès d'un chef de légion se réinitialise en ligne de commande (php bin/install.php)."
-                    : "Seul un chef de légion peut réinitialiser l'accès d'un officier."));
+                    : (is_leader($m) ? "L'accès d'un admin se réinitialise en ligne de commande (php bin/install.php)."
+                    : "Seul un admin peut réinitialiser l'accès d'un officier."));
             } elseif ($m) {
                 $code = issue_activation_code((int) $m['id']);
                 // Affiché une seule fois : seul le hash est stocké.
@@ -117,7 +117,7 @@ admin_tabs('admin');
           <button class="mini" type="submit"><?= $m['active'] ? 'Réinitialiser l\'accès' : 'Générer un code' ?></button>
         </form>
         <?php else: ?>
-        <span class="muted small"><?= (int) $m['id'] === (int) $me['id'] ? 'Toi' : (is_leader($m) ? 'Chef de légion' : 'Officier : réservé aux chefs de légion') ?></span>
+        <span class="muted small"><?= (int) $m['id'] === (int) $me['id'] ? 'Toi' : (is_leader($m) ? 'Admin' : 'Officier : réservé aux admins') ?></span>
         <?php endif; ?>
       </li>
     <?php endforeach; ?>

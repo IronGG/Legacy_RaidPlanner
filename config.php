@@ -57,4 +57,13 @@ return [
         'questlog.gg' => 'https://questlog.gg/aion-2/en/armory/{region}/{id}',
     ],
     'aion_user_agent'    => 'GuildRaid-Legacy/1.0 (organisation de raids de la legion Legacy)',
+
+    // Wars de légion (onglet War) : créées toutes seules chaque semaine, ouvertes aux inscriptions à l'avance.
+    'war_schedule'       => [[4, '21:00'], [6, '21:00']], // [jour, heure] : 1 = lundi … 7 = dimanche ; ici jeudi et samedi à 21:00
+    'war_days_ahead'     => 7,      // une war apparaît (et s'ouvre aux inscriptions) X jours avant
+    'war_length_minutes' => 120,    // durée : inscriptions possibles jusqu'à la fin (retardataires), puis la war passe dans l'historique
+    'war_group_size'     => 5,      // places par groupe
+    // Troupes créées pour chaque nouvelle war : [nom, nombre de groupes]. Les officiers les renomment et les modifient ensuite.
+    'war_troops'         => [['Troupe 1', 4], ['Troupe 2', 4], ['Retardataires', 4]],
+    'war_poll_ms'        => 2000,   // rafraîchissement de la page War (ms), plus rapide pour que les officiers voient les changements des autres
 ];

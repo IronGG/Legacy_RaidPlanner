@@ -1,5 +1,5 @@
 <?php
-// Point d'entrée léger interrogé par le navigateur pour savoir si une salle (ou la liste) a changé.
+// Point d'entrée léger interrogé par le navigateur pour savoir si une salle, la liste des salles ou une war a changé.
 require __DIR__ . '/../src/bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -11,7 +11,9 @@ if (!$me) {
     exit;
 }
 auto_archive();
-if (isset($_GET['r'])) {
+if (isset($_GET['w'])) {
+    echo json_encode(['v' => war_version((int) $_GET['w'])]);
+} elseif (isset($_GET['r'])) {
     $room = room_by_slug((string) $_GET['r']);
     echo json_encode(['v' => $room ? (string) $room['version'] : '0']);
 } else {

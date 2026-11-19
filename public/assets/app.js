@@ -1,4 +1,4 @@
-// Comptes à rebours + rafraîchissement live des salles (polling léger) + confirmations.
+// Comptes à rebours + rafraîchissement live des salles et des wars (polling léger) + déplacements + confirmations.
 (function () {
   'use strict';
 
@@ -7,9 +7,11 @@
   let picked = null;      // joueur sélectionné pour un déplacement
   let dragging = false;
 
-  // Pas de rafraîchissement pendant qu'un chef déplace un joueur ou choisit un rôle
+  // Pas de rafraîchissement pendant qu'on déplace un joueur, qu'un menu est ouvert ou qu'on tape dans un champ
   function interacting(live) {
-    return dragging || !!picked || !!live.querySelector('details[open]');
+    const f = document.activeElement;
+    return dragging || !!picked || !!live.querySelector('details[open] form')
+      || !!(f && live.contains(f) && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName));
   }
 
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -57,7 +59,10 @@
         if (force || String(j.v) !== version) {
           const p = await fetch(live.dataset.partialUrl, { cache: 'no-store', credentials: 'same-origin' });
           if (p.ok) {
+            // Les listes dépliées (data-keep) restent dépliées après la mise à jour
+            const keep = Array.from(live.querySelectorAll('details[open][data-keep]')).map(function (d) { return d.dataset.keep; });
             live.innerHTML = await p.text();
+            keep.forEach(function (k) { const d = live.querySelector('details[data-keep="' + k + '"]'); if (d) d.open = true; });
             version = String(j.v);
             tick();
           }
@@ -70,13 +75,17 @@
     }
 
     refreshNow = function () { check(true); };
-    setInterval(check, POLL_MS);
+    setInterval(check, parseInt(live.dataset.poll || '', 10) || POLL_MS);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) check(false); });
   }
 
-  // Déplacer les joueurs dans une salle (chef de salle et officiers) :
-  // glisser-déposer, ou clic sur un joueur puis clic sur une place (marche aussi au doigt).
-  const room = document.querySelector('.room[data-action]');
+  // Déplacer les joueurs : dans une salle (chef de salle et officiers) ou dans les troupes d'une war (officiers).
+  // Glisser-déposer, ou clic sur un joueur puis clic sur une place (marche aussi au doigt).
+  const board = document.querySelector('.room[data-action], .war[data-action]');
+  const isWar = !!board && board.classList.contains('war');
+  const SLOT = isWar ? '[data-slot]' : '[data-pos]';            // une place
+  const POOL = isWar ? '[data-pool-drop]' : '[data-reserve-drop]'; // « À placer » (war) ou la réserve (salle)
+  const TARGET = SLOT + ', ' + POOL;
   const toast = document.querySelector('.toast');
   let toastTimer = null;
 
@@ -92,63 +101,69 @@
   function unpick() {
     if (picked) picked.classList.remove('is-picked');
     picked = null;
-    if (room) room.classList.remove('picking');
+    if (board) board.classList.remove('picking');
   }
 
   function pick(el) {
     unpick();
     picked = el;
     el.classList.add('is-picked');
-    room.classList.add('picking');
+    board.classList.add('picking');
   }
 
-  async function send(fields) {
-    const fd = new FormData();
-    fd.append('_csrf', room.dataset.csrf);
-    Object.keys(fields).forEach(function (k) { fd.append(k, fields[k]); });
-    unpick();
+  async function post(fd) {
     try {
-      const r = await fetch(room.dataset.action, {
+      const r = await fetch(board.dataset.action, {
         method: 'POST', body: fd, credentials: 'same-origin',
         headers: { 'X-Requested-With': 'fetch', Accept: 'application/json' }
       });
       const j = await r.json();
       say(j.message, j.ok);
     } catch (e) {
-      say("Le déplacement n'a pas pu être enregistré. Vérifie ta connexion.", false);
+      say("Le changement n'a pas pu être enregistré. Vérifie ta connexion.", false);
     }
     if (refreshNow) refreshNow();
   }
 
+  function send(fields) {
+    const fd = new FormData();
+    fd.append('_csrf', board.dataset.csrf);
+    Object.keys(fields).forEach(function (k) { fd.append(k, fields[k]); });
+    unpick();
+    return post(fd);
+  }
+
+  function isPlaced(el) { return el.matches(SLOT); }
+
   function moveTo(memberEl, target) {
-    const fromReserve = !memberEl.hasAttribute('data-pos');
-    if (target.hasAttribute('data-pos')) {
+    const id = memberEl.dataset.member;
+    if (target.matches(SLOT)) {
       if (target === memberEl) return unpick();
-      return send({ action: 'place', member_id: memberEl.dataset.member, position: target.dataset.pos });
+      return send(isWar ? { action: 'place', member_id: id, group_id: target.dataset.group, slot: target.dataset.slot }
+                        : { action: 'place', member_id: id, position: target.dataset.pos });
     }
-    if (target.hasAttribute('data-reserve-drop') && !fromReserve) {
-      return send({ action: 'move', to: 'reserve', member_id: memberEl.dataset.member });
+    if (target.matches(POOL) && isPlaced(memberEl)) {
+      return send(isWar ? { action: 'unplace', member_id: id } : { action: 'move', to: 'reserve', member_id: id });
     }
     unpick();
   }
 
-  if (room) {
-    room.addEventListener('click', function (ev) {
+  if (board) {
+    board.addEventListener('click', function (ev) {
       if (ev.target.closest('button, a, input, select, textarea, summary, details, form')) return;
       const member = ev.target.closest('[data-member]');
-      const target = ev.target.closest('[data-pos], [data-reserve-drop]');
+      const target = ev.target.closest(TARGET);
       if (picked) {
         if (member === picked) return unpick();
-        const pickedInReserve = !picked.hasAttribute('data-pos');
-        if (target && target.hasAttribute('data-pos')) return moveTo(picked, target);
-        if (target && target.hasAttribute('data-reserve-drop') && !pickedInReserve) return moveTo(picked, target);
+        if (target && target.matches(SLOT)) return moveTo(picked, target);
+        if (target && target.matches(POOL) && isPlaced(picked)) return moveTo(picked, target);
         if (member) return pick(member);
         return unpick();
       }
       if (member) pick(member);
     });
 
-    room.addEventListener('dragstart', function (ev) {
+    board.addEventListener('dragstart', function (ev) {
       const m = ev.target.closest && ev.target.closest('[data-member]');
       if (!m) return;
       dragging = true;
@@ -156,26 +171,26 @@
       ev.dataTransfer.effectAllowed = 'move';
       ev.dataTransfer.setData('text/plain', m.dataset.member);
     });
-    room.addEventListener('dragover', function (ev) {
+    board.addEventListener('dragover', function (ev) {
       if (!dragging) return;
-      const t = ev.target.closest('[data-pos], [data-reserve-drop]');
-      room.querySelectorAll('.drop-hover').forEach(function (el) { if (el !== t) el.classList.remove('drop-hover'); });
+      const t = ev.target.closest(TARGET);
+      board.querySelectorAll('.drop-hover').forEach(function (el) { if (el !== t) el.classList.remove('drop-hover'); });
       if (!t) return;
       ev.preventDefault();
       ev.dataTransfer.dropEffect = 'move';
       t.classList.add('drop-hover');
     });
-    room.addEventListener('drop', function (ev) {
-      const t = ev.target.closest('[data-pos], [data-reserve-drop]');
+    board.addEventListener('drop', function (ev) {
+      const t = ev.target.closest(TARGET);
       if (!dragging || !t || !picked) return;
       ev.preventDefault();
       dragging = false;
       t.classList.remove('drop-hover');
       moveTo(picked, t);
     });
-    room.addEventListener('dragend', function () {
+    board.addEventListener('dragend', function () {
       dragging = false;
-      room.querySelectorAll('.drop-hover').forEach(function (el) { el.classList.remove('drop-hover'); });
+      board.querySelectorAll('.drop-hover').forEach(function (el) { el.classList.remove('drop-hover'); });
       if (picked) unpick();
     });
     document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') unpick(); });
@@ -197,5 +212,18 @@
     const btn = ev.submitter;
     const msg = (btn && btn.dataset && btn.dataset.confirm) || (ev.target.dataset ? ev.target.dataset.confirm : null);
     if (msg && !window.confirm(msg)) ev.preventDefault();
+  });
+
+  // Formulaires marqués data-ajax : envoyés sans recharger la page (après la confirmation ci-dessus)
+  document.addEventListener('submit', function (ev) {
+    const f = ev.target;
+    if (ev.defaultPrevented || !board || !f.matches('form[data-ajax]') || !board.contains(f)) return;
+    ev.preventDefault();
+    const fd = new FormData(f);
+    if (ev.submitter && ev.submitter.name) fd.append(ev.submitter.name, ev.submitter.value);
+    const d = f.closest('details');
+    if (d) d.open = false;
+    unpick();
+    post(fd);
   });
 })();
