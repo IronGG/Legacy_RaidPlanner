@@ -10,6 +10,7 @@ require __DIR__ . '/db.php';
 require __DIR__ . '/auth.php';
 require __DIR__ . '/rooms.php';
 require __DIR__ . '/wars.php';
+require __DIR__ . '/discord.php';
 require __DIR__ . '/options.php';
 require __DIR__ . '/aion.php';
 require __DIR__ . '/backup.php';

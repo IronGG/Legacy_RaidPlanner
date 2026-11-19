@@ -78,4 +78,22 @@ return [
     // Troupes créées pour chaque nouvelle war : [nom, nombre de groupes]. Les officiers les renomment et les modifient ensuite.
     'war_troops'         => [['Troupe 1', 4], ['Troupe 2', 4], ['Retardataires', 4]],
     'war_poll_ms'        => 2000,   // rafraîchissement de la page War (ms), plus rapide pour que les officiers voient les changements des autres
+
+    // Bot Discord des wars (README, section « Bot Discord »). Rien de secret ici : le jeton du bot et la clé du cron
+    // sont dans data/discord.php, créé sur le serveur par « php bin/discord.php setup ».
+    'discord' => [
+        'enabled'         => false,
+        'application_id'  => '',   // Portail développeur Discord > General Information > Application ID
+        'public_key'      => '',   // … > Public Key (vérifie que les clics viennent bien de Discord)
+        'guild_id'        => '',   // serveur de la légion (mode développeur : clic droit > Copier l'identifiant)
+        'war_channel_id'  => '',   // salon où le bot poste les wars
+        'member_role_ids' => [],   // rôles autorisés à répondre, p. ex. ['123456789'] ; vide = tout le serveur
+        'ping_role_id'    => '',   // rôle mentionné dans les annonces (vide = aucune mention)
+        'site_url'        => 'https://legacy.majorsystems.ch',
+        'auto_post_hours' => 48,   // le bot poste chaque war X heures avant (0 = seulement avec le bouton du site)
+        'remind_minutes'  => 60,   // rappel dans le salon X minutes avant (0 = pas de rappel)
+        'announce_compo'  => true, // message dans le salon quand la compo est publiée
+        'role_emojis'     => ['Tank' => '🛡️', 'DPS' => '⚔️', 'Support' => '✨'],
+        'class_emojis'    => [],   // facultatif : 'Gladiateur' => '<:gladiateur:123456789012345678>'
+    ],
 ];

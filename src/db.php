@@ -250,6 +250,23 @@ function migrate(PDO $pdo): void
         $pdo->exec('PRAGMA user_version = 9');
         $pdo->exec('COMMIT');
     }
+    if ($version < 10) {
+        // Bot Discord : compte Discord lié à chaque membre, message Discord de chaque war
+        $pdo->exec('BEGIN IMMEDIATE');
+        $pdo->exec(<<<SQL
+            ALTER TABLE members ADD COLUMN discord_id TEXT;
+            ALTER TABLE members ADD COLUMN discord_name TEXT;
+            CREATE UNIQUE INDEX members_discord ON members (discord_id) WHERE discord_id IS NOT NULL;
+            ALTER TABLE wars ADD COLUMN discord_channel_id TEXT;
+            ALTER TABLE wars ADD COLUMN discord_message_id TEXT;
+            ALTER TABLE wars ADD COLUMN discord_dirty INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE wars ADD COLUMN discord_synced_at INTEGER;
+            ALTER TABLE wars ADD COLUMN discord_error TEXT;
+            ALTER TABLE wars ADD COLUMN discord_reminded_at INTEGER;
+            SQL);
+        $pdo->exec('PRAGMA user_version = 10');
+        $pdo->exec('COMMIT');
+    }
 }
 
 /** Remplit les listes avec les valeurs de l'Excel, plus toute valeur déjà utilisée en base. */

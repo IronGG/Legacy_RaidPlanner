@@ -47,6 +47,17 @@ if (is_post() && ($_POST['form'] ?? '') === 'delete' && $isOfficer && !$self) {
     redirect('members.php');
 }
 
+// Compte Discord lié (bot des wars) : un officier le corrige, sur un rang inférieur au sien
+if (is_post() && ($_POST['form'] ?? '') === 'discord' && !$self) {
+    try {
+        if (!can_act_on($me, $m)) throw new DiscordError('Seul un rang supérieur au sien peut changer le compte Discord de ce membre.');
+        flash('ok', discord_set_link($m, ($_POST['unlink'] ?? '') === '1' ? '' : in_str('discord_id', 25), $me));
+    } catch (UserError $e) {
+        flash('error', $e->getMessage());
+    }
+    redirect($selfUrl);
+}
+
 if (is_post() && ($_POST['form'] ?? '') === 'password' && $self) {
     $new = (string) ($_POST['new_password'] ?? '');
     if (!pw_verify((string) ($_POST['current_password'] ?? ''), (string) $m['password_hash'])) $errors[] = 'Mot de passe actuel incorrect.';
@@ -252,6 +263,27 @@ page_header($self ? 'Mon profil' : $m['pseudo'], $self ? 'profile' : 'members');
   <?php if (!$readOnly): ?><p><button class="btn btn-gold" type="submit">Enregistrer le profil</button></p><?php endif; ?>
   </fieldset>
 </form>
+
+<?php if ($self || can_lead($me)): ?>
+  <section class="form form-narrow discord-link">
+    <h2>Compte Discord</h2>
+    <?php if ($m['discord_id']): ?>
+      <p>Lié à <strong><?= e($m['discord_name'] ?: 'ID ' . $m['discord_id']) ?></strong><?= $m['discord_name'] ? ' <span class="muted small">(ID ' . e($m['discord_id']) . ')</span>' : '' ?>.
+        <?= $self ? 'Tes clics sur les boutons des wars sur Discord comptent comme tes réponses ici.' : 'Ses clics sur les boutons des wars sur Discord comptent comme ses réponses.' ?></p>
+    <?php else: ?>
+      <p class="muted"><?= $self ? 'Pas encore lié. Clique sur un bouton sous un message de war sur Discord : ton compte se lie tout seul à ce profil si ton pseudo Discord correspond.'
+          : 'Pas encore lié. Il se lie tout seul au premier clic sur un bouton de war, si son pseudo Discord correspond.' ?></p>
+    <?php endif; ?>
+    <?php if (!$self && can_act_on($me, $m)): ?>
+      <form method="post" action="<?= e($selfUrl) ?>" class="discord-form"><?= csrf_field() ?><input type="hidden" name="form" value="discord">
+        <label for="f-discord" class="small muted">Identifiant Discord (mode développeur : clic droit sur la personne > Copier l'identifiant)</label>
+        <div class="inline-fields"><input id="f-discord" name="discord_id" inputmode="numeric" maxlength="21" value="<?= e($m['discord_id']) ?>" placeholder="123456789012345678">
+          <button class="btn btn-ghost" type="submit">Lier</button>
+          <?php if ($m['discord_id']): ?><button class="btn btn-danger" type="submit" name="unlink" value="1" data-confirm="Délier le compte Discord de <?= e($m['pseudo']) ?> ?">Délier</button><?php endif; ?></div>
+      </form>
+    <?php endif; ?>
+  </section>
+<?php endif; ?>
 
 <?php if (!$self && is_leader($me) && !is_leader($m)): ?>
   <form method="post" class="form form-narrow" action="<?= e($selfUrl) ?>"

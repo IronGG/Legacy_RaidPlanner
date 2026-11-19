@@ -72,6 +72,47 @@ Les wars sont créées toutes seules chaque semaine, le **jeudi et le samedi à 
 - **CP** affiché sur chaque joueur, avec le CP moyen par troupe et par rôle ; « À placer » est trié par CP (banc à la fin).
 - Un joueur qui passe Absent quitte sa place. Les groupes sont numérotés à la suite sur toutes les troupes (Groupe 1 à 12).
 
+## Bot Discord des wars
+
+Le bot poste chaque war dans un salon Discord, avec les inscrits par rôle et des boutons **Présent / En retard /
+Provisoire / Banc / Absent**, plus **Ma place** (troupe et groupe, une fois la compo publiée) et un lien vers le site.
+Un clic sur Discord = une réponse sur le site, dans la même base ; une réponse sur le site met le message Discord à jour.
+Il fonctionne par « interactions HTTP » : pas de programme allumé en permanence, Discord appelle `public/discord.php`.
+
+**Liaison des comptes** (automatique, au premier clic) : le site retrouve le membre par son identifiant Discord ; sinon
+par son pseudo sur le serveur (« [Legacy]Junee » → Junee, « Ledormeur|Trafesk » → Trafesk, emojis et lettres
+décoratives ignorés) ; sinon il crée le profil (classe et CP lus en jeu ensuite, « Vérifié : non »). Plusieurs profils
+possibles, ou profil déjà lié à un autre compte : refus, un officier lie à la main dans le profil (section Compte Discord).
+Seuls les membres qui ont un rôle de `member_role_ids` peuvent répondre.
+
+**Ce que fait le bot tout seul** (`public/cron.php`, planificateur Infomaniak toutes les 15 min) : il poste les wars
+`auto_post_hours` avant (48 h), envoie un rappel `remind_minutes` avant (60 min), désactive les boutons des wars
+terminées. Quand un officier publie la compo, il l'annonce dans le salon (mention de `ping_role_id`).
+
+### Mise en place
+
+1. **Portail développeur Discord** (https://discord.com/developers/applications) : *New Application*.
+   - *General Information* : note l'**Application ID** et la **Public Key**.
+   - *Bot* : *Reset Token* et copie le **jeton** (il ne s'affiche qu'une fois). Désactive *Public Bot*.
+     Aucun « Privileged Gateway Intent » n'est nécessaire.
+   - *Installation* (ou *OAuth2 > URL Generator*) : scope `bot`, permissions *View Channels*, *Send Messages*,
+     *Embed Links*, *Read Message History* (+ *Mention All Roles* si le rôle à mentionner n'est pas mentionnable,
+     *Use External Emojis* pour des emblèmes de classe). Ouvre le lien et ajoute le bot au serveur de la légion.
+2. **Discord** : *Paramètres > Avancés > Mode développeur*, puis clic droit > *Copier l'identifiant* sur le serveur,
+   le salon des wars et le(s) rôle(s) de la légion.
+3. **`config.php`**, bloc `'discord'` : `'enabled' => true`, `application_id`, `public_key`, `guild_id`,
+   `war_channel_id`, `member_role_ids`, `ping_role_id` (facultatif). Envoie le fichier sur le serveur.
+4. **SSH** : `php bin/discord.php setup` (colle le jeton : il ne s'affiche pas ; il est écrit dans `data/discord.php`,
+   jamais dans git), puis `php bin/discord.php test`. La commande `setup` affiche l'adresse du cron.
+5. **Portail Discord**, *General Information* > *Interactions Endpoint URL* : `https://legacy.majorsystems.ch/discord.php`,
+   puis *Save Changes* (Discord vérifie l'adresse à ce moment ; le site doit déjà être à jour).
+6. **Infomaniak** : *Planificateur de tâches* > *Planifier une tâche*, adresse du cron affichée à l'étape 4,
+   toutes les 15 minutes.
+7. Page War d'une war > **Publier sur Discord** (ou attendre la publication automatique).
+
+En SSH : `php bin/discord.php post ID` poste une war, `php bin/discord.php cron` lance les tâches du cron tout de suite.
+Si le jeton fuite : *Reset Token* sur le portail, puis `php bin/discord.php setup`.
+
 ## Lancer l'app
 
 ### Avec Docker (le plus simple)
@@ -227,6 +268,8 @@ Le site ne propose volontairement aucun téléchargement de la base : on la réc
 ```
 config.php            réglages
 bin/install.php       création de la base + premier admin
+bin/discord.php       bot Discord : setup (jeton), test, post, cron
+public/discord.php    clics Discord (requêtes signées) ; public/cron.php : tâches à heure fixe
 seed/membres.json     membres extraits de l'Excel (import au premier lancement)
 data/                 base SQLite (créée automatiquement)
 src/                  logique : base, authentification, salles, rendu

@@ -51,9 +51,13 @@ if (is_post()) {
             'message'       => war_set_message($id, in_str('message', 300), $me),
             'clear'         => war_clear_places($id, $me),
             'copy_previous' => war_copy_previous($id, $me),
+            'discord_post'  => can_manage_war($me) ? discord_post_war($id, $me) : throw new WarError('Seuls les officiers et les admins publient sur Discord.'),
             default         => throw new WarError('Action inconnue.'),
         };
         $result = ['ok' => true, 'message' => $msg];
+        // Le message Discord de la war suit les changements (après l'envoi de la réponse : personne n'attend)
+        discord_sync_soon($id);
+        if (($_POST['action'] ?? '') === 'publish' && ($_POST['on'] ?? '') === '1') discord_announce_compo_soon($id);
     } catch (UserError $e) {
         $result = ['ok' => false, 'message' => $e->getMessage()];
     }

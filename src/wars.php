@@ -221,7 +221,7 @@ function war_group_number(int $warId, int $groupId): int
 /** Nouvelle version : les pages ouvertes se mettent à jour, et on sait qui a fait le dernier changement. */
 function war_touch(int $warId, ?array $me): void
 {
-    q('UPDATE wars SET version = version + 1, updated_at = ?, updated_by = ? WHERE id = ?', [time(), $me['pseudo'] ?? null, $warId]);
+    q('UPDATE wars SET version = version + 1, updated_at = ?, updated_by = ?, discord_dirty = 1 WHERE id = ?', [time(), $me['pseudo'] ?? null, $warId]);
 }
 
 /** War lue dans une transaction d'écriture (tx) ; $manage : réservé aux officiers. */

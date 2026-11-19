@@ -203,6 +203,16 @@ function render_war_tools(array $war, array $signups, array $me): void
         <?= csrf_field() ?><input type="hidden" name="action" value="cancel"><input type="hidden" name="on" value="<?= (int) $war['cancelled'] ? '0' : '1' ?>">
         <button class="mini<?= (int) $war['cancelled'] ? '' : ' mini-danger' ?>" type="submit"><?= (int) $war['cancelled'] ? 'Rétablir la war' : 'Annuler la war' ?></button></form>
     </div>
+    <?php if (discord_enabled()): $link = discord_message_link($war); ?>
+      <div class="war-tools-row war-discord">
+        <p class="war-pub"><?= $link
+            ? '<span class="badge badge-aether">Discord</span> <a href="' . e($link) . '" target="_blank" rel="noopener">Message de la war</a> <span class="muted small">mis à jour tout seul</span>'
+            : '<span class="badge badge-muted">Discord</span> <span class="muted small">Pas encore postée' . ((int) dcfg('auto_post_hours') > 0 ? ' : le bot la postera ' . (int) dcfg('auto_post_hours') . ' h avant.' : '.') . '</span>' ?></p>
+        <form method="post" data-ajax<?= $link ? ' data-confirm="Poster un nouveau message pour cette war ? L\'ancien ne sera plus mis à jour (supprime-le sur Discord)."' : '' ?>>
+          <?= csrf_field() ?><input type="hidden" name="action" value="discord_post"><button class="mini" type="submit"><?= $link ? 'Republier sur Discord' : 'Publier sur Discord' ?></button></form>
+      </div>
+      <?php if ($war['discord_error']): ?><p class="flash flash-error small">Discord : <?= e($war['discord_error']) ?></p><?php endif; ?>
+    <?php endif; ?>
     <?php if ($war['updated_by']): ?><p class="muted small war-last">Dernier changement : <?= e($war['updated_by']) ?>, <?= e(fmt_ago($war['updated_at'])) ?>.</p><?php endif; ?>
   </section>
     <?php

@@ -13,6 +13,7 @@ if (!$me) {
 auto_archive();
 if (isset($_GET['w'])) {
     echo json_encode(['v' => war_version((int) $_GET['w'])]);
+    discord_sync_soon((int) $_GET['w']); // ne fait rien s'il n'y a rien de nouveau
 } elseif (isset($_GET['r'])) {
     $room = room_by_slug((string) $_GET['r']);
     echo json_encode(['v' => $room ? (string) $room['version'] : '0']);

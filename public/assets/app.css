@@ -545,6 +545,11 @@ code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-siz
 .picking .war-slot-empty { border-color: rgba(114, 215, 232, .45); }
 .war.drop-out .is-picked { opacity: .4; outline-color: var(--ember); }  /* lâché ici, le joueur sort de sa troupe */
 .war-add-troop { margin: 0; }
+.war-discord { padding-top: .4rem; border-top: 1px solid var(--rule); }
+.discord-link { margin-top: 1.5rem; }
+.discord-link h2 { font-size: 1.15rem; }
+.inline-fields { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin-top: .3rem; }
+.inline-fields input { flex: 1 1 14rem; min-width: 0; }
 
 /* Réponses façon Raid-Helper */
 .war-summary { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
