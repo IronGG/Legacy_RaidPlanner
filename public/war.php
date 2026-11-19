@@ -35,9 +35,8 @@ if (is_post()) {
     $int = fn(string $k) => (int) ($_POST[$k] ?? 0);
     try {
         $msg = match ((string) ($_POST['action'] ?? '')) {
-            'signup'        => war_signup($id, $me, in_choice('role', opts('role', null, true)), (string) ($_POST['status'] ?? ''), $me),
-            'signup_for'    => war_signup($id, member_by_id($int('member_id')) ?? throw new WarError('Choisis un membre.'),
-                                   in_choice('role', opts('role', null, true)), (string) ($_POST['status'] ?? ''), $me),
+            'signup'        => war_signup($id, $me, (string) ($_POST['status'] ?? ''), $me),
+            'signup_for'    => war_signup($id, member_by_id($int('member_id')) ?? throw new WarError('Choisis un membre.'), (string) ($_POST['status'] ?? ''), $me),
             'place'         => war_place($id, $int('member_id'), $int('group_id'), $int('slot'), $me),
             'unplace'       => war_unplace($id, $int('member_id'), $me),
             'group_add'     => war_group_add($id, $int('troop_id'), $me),

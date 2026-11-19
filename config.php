@@ -63,6 +63,13 @@ return [
     'war_days_ahead'     => 7,      // une war apparaît (et s'ouvre aux inscriptions) X jours avant
     'war_length_minutes' => 120,    // durée : inscriptions possibles jusqu'à la fin (retardataires), puis la war passe dans l'historique
     'war_group_size'     => 5,      // places par groupe
+    // Rôle en war, déduit de la classe (le rôle du profil, lui, sert aux salles de raid). Ordre des colonnes = ordre ici.
+    'war_roles'          => [
+        'Tank'    => ['Gladiateur', 'Templier', 'Gladiator', 'Templar'],
+        'DPS'     => [],                                   // toutes les autres classes (war_default_role)
+        'Support' => ['Aède', 'Clerc', 'Chanter', 'Cleric'],
+    ],
+    'war_default_role'   => 'DPS',
     // Troupes créées pour chaque nouvelle war : [nom, nombre de groupes]. Les officiers les renomment et les modifient ensuite.
     'war_troops'         => [['Troupe 1', 4], ['Troupe 2', 4], ['Retardataires', 4]],
     'war_poll_ms'        => 2000,   // rafraîchissement de la page War (ms), plus rapide pour que les officiers voient les changements des autres

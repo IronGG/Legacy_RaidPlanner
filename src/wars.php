@@ -18,6 +18,27 @@ const WAR_STATUS_BADGES = ['late' => 'Retard', 'tentative' => 'Provisoire', 'ben
 const WAR_PLACEABLE = ['present', 'late', 'tentative', 'bench']; // tout le monde sauf les absents
 const WAR_TROOP_PLAYERS = 20;                                       // taille d'une troupe ajoutée par un officier
 
+/** Rôle en war d'après la classe (« war_roles » dans config.php) : Gladiateur et Templier tank, Aède et Clerc support, le reste DPS. */
+function war_role_for_class(?string $classe): string
+{
+    $norm = fn(string $s) => strtr(mb_strtolower(trim($s)), ['é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e', 'à' => 'a', 'â' => 'a', 'î' => 'i', 'ï' => 'i', 'ô' => 'o', 'û' => 'u', 'ù' => 'u', 'ç' => 'c']);
+    $k = $norm((string) $classe);
+    foreach ((array) cfg('war_roles') as $role => $classes) {
+        foreach ((array) $classes as $c) {
+            if ($norm((string) $c) === $k) return (string) $role;
+        }
+    }
+    return (string) (cfg('war_default_role') ?: 'DPS');
+}
+
+/** Rôles de war dans l'ordre d'affichage. */
+function war_roles_order(): array
+{
+    $roles = array_map('strval', array_keys((array) cfg('war_roles')));
+    $default = (string) (cfg('war_default_role') ?: 'DPS');
+    return in_array($default, $roles, true) ? $roles : [...$roles, $default];
+}
+
 function can_manage_war(array $me): bool
 {
     return is_officer($me); // officiers et admins
@@ -109,11 +130,13 @@ function wars_for_index(int $pastLimit = 8): array
 /** Réponses à une war, avec le profil de chaque membre. */
 function war_signups(int $warId): array
 {
-    return q("SELECT s.member_id, s.role, s.status, s.signed_at, s.updated_at,
-                     m.id, m.pseudo, m.classe, m.gs, m.cp, m.is_officer, m.is_raid_lead, m.is_leader
-              FROM war_signups s JOIN members m ON m.id = s.member_id
-              WHERE s.war_id = ?
-              ORDER BY s.signed_at, m.pseudo COLLATE NOCASE", [$warId])->fetchAll();
+    $rows = q("SELECT s.member_id, s.status, s.signed_at, s.updated_at,
+                      m.id, m.pseudo, m.classe, m.gs, m.cp, m.is_officer, m.is_raid_lead, m.is_leader
+               FROM war_signups s JOIN members m ON m.id = s.member_id
+               WHERE s.war_id = ?
+               ORDER BY s.signed_at, m.pseudo COLLATE NOCASE", [$warId])->fetchAll();
+    foreach ($rows as &$r) $r['role'] = war_role_for_class($r['classe']); // toujours la classe actuelle
+    return $rows;
 }
 
 function war_signup_of(int $warId, int $memberId): ?array
@@ -225,20 +248,19 @@ function war_troop_of(int $warId, int $troopId): array
 }
 
 /**
- * Réponse d'un membre (rôle + statut). $me agit ; $member répond (un officier peut répondre pour un membre).
+ * Réponse d'un membre (statut ; le rôle vient de sa classe). $me agit ; $member répond (un officier peut répondre pour un membre).
  * Un membre qui passe « Absent » quitte sa place dans la compo.
  */
-function war_signup(int $warId, array $member, ?string $role, string $status, array $me): string
+function war_signup(int $warId, array $member, string $status, array $me): string
 {
-    return tx(function () use ($warId, $member, $role, $status, $me) {
+    return tx(function () use ($warId, $member, $status, $me) {
         $self = (int) $member['id'] === (int) $me['id'];
         $war = locked_war($warId, $me, !$self);
         if (!isset(WAR_STATUSES[$status])) throw new WarError('Réponse inconnue.');
         if ((int) $war['cancelled']) throw new WarError('Cette war est annulée.');
         if ($self && !war_signup_open($war)) throw new WarError('Cette war est terminée : les réponses sont closes.');
-        if ($role !== null && !in_array($role, opts('role', null, true), true)) throw new WarError('Rôle inconnu.');
         $prev = war_signup_of($warId, (int) $member['id']);
-        $role ??= $prev['role'] ?? ($member['role'] ?: null);
+        $role = war_role_for_class($member['classe']); // gardé pour l'historique ; l'affichage suit la classe actuelle
         $now = time();
         if ($prev) {
             q('UPDATE war_signups SET role = ?, status = ?, updated_at = ? WHERE war_id = ? AND member_id = ?', [$role, $status, $now, $warId, $member['id']]);
@@ -246,7 +268,7 @@ function war_signup(int $warId, array $member, ?string $role, string $status, ar
             q('INSERT INTO war_signups (war_id, member_id, role, status, signed_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
                 [$warId, $member['id'], $role, $status, $now, $now]);
         }
-        $msg = ($self ? 'Ta réponse : ' : $member['pseudo'] . ' : ') . WAR_STATUSES[$status] . ($role && $status !== 'absent' ? ', ' . $role : '');
+        $msg = ($self ? 'Ta réponse : ' : $member['pseudo'] . ' : ') . WAR_STATUSES[$status] . ($status !== 'absent' ? ', ' . $role : '');
         if ($status === 'absent' && q('DELETE FROM war_places WHERE war_id = ? AND member_id = ?', [$warId, $member['id']])->rowCount()) {
             $msg .= $self ? '. Ta place dans la compo est libérée' : '. Sa place dans la compo est libérée';
         }

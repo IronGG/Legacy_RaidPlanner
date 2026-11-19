@@ -10,7 +10,7 @@ declare(strict_types=1);
 // Chaque liste, et les colonnes qui stockent ses valeurs (mises à jour quand on renomme une option).
 const OPTION_LISTS = [
     'classe'       => ['label' => 'Classes', 'columns' => [['members', 'classe']]],
-    'role'         => ['label' => 'Rôles', 'columns' => [['members', 'role'], ['room_slots', 'role'], ['war_signups', 'role']]],
+    'role'         => ['label' => 'Rôles', 'columns' => [['members', 'role'], ['room_slots', 'role']]],
     'etape'        => ['label' => 'Étapes du raid', 'columns' => [['members', 'meilleure_etape'], ['rooms', 'etape']]],
     'objectif'     => ['label' => 'Objectifs', 'columns' => [['members', 'objectif'], ['rooms', 'objectif']]],
     'connaissance' => ['label' => 'Connaissance du raid', 'columns' => [['members', 'connaissance']]],

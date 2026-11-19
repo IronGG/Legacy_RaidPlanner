@@ -489,6 +489,12 @@ code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-siz
 .war-chip .emblem, .war-slot .emblem { width: 22px; height: 22px; }
 .war-name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .war-st { margin: 0; font-size: .68rem; padding: .08rem .4rem; }
+.war-cp { flex: none; margin-left: auto; color: var(--mist); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.war-name + .war-cp, .war-st + .war-cp { margin-left: .2rem; }
+.war-cp-none { opacity: .5; }
+.war-names .war-cp { margin-left: .15rem; font-size: .78rem; }
+.war-role-info { display: flex; align-items: center; gap: .6rem; margin: 0 0 .9rem; }
+.war-role-info .role-tag { font-size: 1rem; }
 .war-st-late { color: var(--gold); border-color: rgba(227, 184, 102, .5); }
 .war-st-tentative { color: var(--aether); border-color: rgba(114, 215, 232, .5); }
 .war-st-bench { color: var(--mist); }
@@ -501,7 +507,7 @@ code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-siz
 }
 .war-troop-head h2::before, .war-troop-head h2::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
 .war-troop-head h2::before { flex: 0 0 1.2rem; }
-.war-troop-head h2 small { color: var(--mist); letter-spacing: 0; font-weight: 400; }
+.war-troop-head h2 small { color: var(--mist); letter-spacing: 0; font-weight: 400; text-transform: none; }
 .war-tools-inline { display: flex; gap: .3rem; align-items: center; flex-wrap: wrap; }
 .war-tools-inline form { margin: 0; }
 .war-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem 1.2rem; }

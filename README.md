@@ -51,7 +51,7 @@ Pour déplacer quelqu'un : glisser-déposer, ou clic sur le joueur puis clic sur
 Les wars sont créées toutes seules chaque semaine, le **jeudi et le samedi à 21:00** (`war_schedule` dans `config.php`),
 7 jours à l'avance (`war_days_ahead`). Aucune tâche planifiée : elles apparaissent à la première visite de l'onglet War.
 
-- **Membres** : pour chaque war, ils choisissent leur rôle et répondent **Présent**, **En retard**, **Provisoire**, **Banc**
+- **Membres** : pour chaque war, ils répondent **Présent**, **En retard**, **Provisoire**, **Banc**
   ou **Absent**, jusqu'à la fin de la war (2 h après le début, `war_length_minutes`) pour les retardataires. La page affiche
   les réponses par rôle, le banc et les absents, comme Raid-Helper. Ils voient les troupes et leur place **seulement une fois
   la compo publiée**, puis chaque changement en direct.
@@ -64,6 +64,9 @@ Les wars sont créées toutes seules chaque semaine, le **jeudi et le samedi à 
     Groupes : une place de plus ou de moins, supprimer. Ce qui est supprimé renvoie les joueurs dans « À placer ».
   - **Publier la compo** / Masquer, **Reprendre la compo** de la war précédente (les absents laissent leur place vide),
     Tout remettre à placer, Message affiché en haut, **Répondre pour un membre** (réponse donnée sur Discord), Annuler la war.
+- **Rôle en war d'après la classe** (`war_roles`) : Gladiateur et Templier = Tank, Aède et Clerc = Support, les autres = DPS.
+  Le rôle du profil (Soin, Polyvalent…) ne sert qu'aux salles de raid. Si la classe change en jeu, le rôle de war suit.
+- **CP** affiché sur chaque joueur, avec le CP moyen par troupe et par rôle ; « À placer » est trié par CP (banc à la fin).
 - Un joueur qui passe Absent quitte sa place. Les groupes sont numérotés à la suite sur toutes les troupes (Groupe 1 à 12).
 
 ## Lancer l'app

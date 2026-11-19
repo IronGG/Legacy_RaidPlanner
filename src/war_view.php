@@ -32,6 +32,20 @@ function war_phase_html(array $war): string
     };
 }
 
+/** CP lu en jeu (ou saisi), « 190,5k ». */
+function war_cp_html(mixed $cp): string
+{
+    return ($cp === null || $cp === '') ? '<span class="war-cp war-cp-none" title="CP inconnu">–</span>'
+        : '<span class="war-cp" title="CP">' . e(fmt_cp($cp)) . '</span>';
+}
+
+/** CP moyen d'une liste de joueurs (ceux dont le CP est connu). */
+function war_avg_cp(array $players): ?int
+{
+    $cps = array_filter(array_map(fn($p) => $p['cp'] ?? null, $players), fn($v) => $v !== null && $v !== '');
+    return $cps ? (int) round(array_sum($cps) / count($cps)) : null;
+}
+
 function war_status_badge(?string $status): string
 {
     return isset(WAR_STATUS_BADGES[$status]) ? '<span class="badge war-st war-st-' . e($status) . '">' . e(WAR_STATUS_BADGES[$status]) . '</span>' : '';
@@ -84,23 +98,23 @@ function render_war_index(array $me): void
 function render_war_answer(array $war, array $me): void
 {
     $s = war_signup_of((int) $war['id'], (int) $me['id']);
-    $role = $s['role'] ?? ($me['role'] ?: null);
-    $roles = opts('role', $role);
+    $role = war_role_for_class($me['classe']);
     ?>
   <section class="panel war-answer" aria-labelledby="answer-title">
     <h2 id="answer-title">Ta réponse
-      <?php if ($s): ?><span class="war-my war-my-<?= e($s['status']) ?>"><?= e(WAR_STATUSES[$s['status']]) ?><?= $s['role'] && $s['status'] !== 'absent' ? ' · ' . e($s['role']) : '' ?></span>
+      <?php if ($s): ?><span class="war-my war-my-<?= e($s['status']) ?>"><?= e(WAR_STATUSES[$s['status']]) ?></span>
       <?php else: ?><span class="war-my war-my-none">Pas encore répondu</span><?php endif; ?>
     </h2>
     <form method="post" action="war.php?w=<?= (int) $war['id'] ?>">
       <?= csrf_field() ?><input type="hidden" name="action" value="signup">
-      <fieldset class="field"><legend>Rôle pour cette war</legend><?= chip_group('role', $roles, $role ?? ($roles[0] ?? null)) ?></fieldset>
+      <p class="war-role-info"><?= class_icon($me['classe'], 26) ?><span>Rôle en war : <strong class="role-tag <?= e(role_class($role)) ?>"><?= e($role) ?></strong>
+        <span class="muted">d'après ta classe (<?= e($me['classe'] ?: 'Autre') ?>) · CP <?= e(fmt_cp($me['cp'])) ?></span></span></p>
       <div class="war-status-btns">
         <?php foreach (WAR_STATUSES as $key => $label): ?>
           <button class="btn war-btn war-btn-<?= e($key) ?><?= ($s['status'] ?? '') === $key ? ' is-current' : '' ?>" type="submit" name="status" value="<?= e($key) ?>"><?= e($label) ?></button>
         <?php endforeach; ?>
       </div>
-      <p class="hint">Choisis ton rôle, puis clique sur ta réponse. Tu peux la changer jusqu'à la fin de la war.</p>
+      <p class="hint">Clique sur ta réponse ; tu peux la changer jusqu'à la fin de la war. Si ta classe est fausse, corrige-la dans Mon profil.</p>
     </form>
   </section>
     <?php
@@ -180,7 +194,6 @@ function render_war_tools(array $war, array $signups, array $me): void
               <option value="<?= (int) $m['id'] ?>"><?= e($m['pseudo']) ?><?= isset($answers[(int) $m['id']]) ? ' (' . e($answers[(int) $m['id']]) . ')' : '' ?></option>
             <?php endforeach; ?>
           </select>
-          <?= select_field('role', opts('role'), null, 'Rôle de son profil') ?>
           <span class="war-status-btns">
             <?php foreach (WAR_STATUSES as $key => $label): ?><button class="mini war-btn-<?= e($key) ?>" type="submit" name="status" value="<?= e($key) ?>"><?= e($label) ?></button><?php endforeach; ?>
           </span>
@@ -208,7 +221,11 @@ function render_war_board(array $war, array $layout, array $byMember, array $me,
         $cap = array_sum(array_map(fn($g) => (int) $g['size'], $t['groups']));
         $filled = array_sum(array_map(fn($g) => count($g['slots']), $t['groups']));
         $tid = (int) $t['id'];
-        echo '<section class="war-troop"><header class="war-troop-head"><h2><span>' . e($t['name']) . '</span> <small>' . $filled . '/' . $cap . '</small></h2>';
+        $inTroop = [];
+        foreach ($t['groups'] as $g) foreach ($g['slots'] as $mid) if (isset($byMember[$mid])) $inTroop[] = $byMember[$mid];
+        $avg = war_avg_cp($inTroop);
+        echo '<section class="war-troop"><header class="war-troop-head"><h2><span>' . e($t['name']) . '</span> <small>' . $filled . '/' . $cap
+            . ($avg ? ' · CP moyen ' . e(fmt_cp($avg)) : '') . '</small></h2>';
         if ($edit) {
             echo '<div class="war-tools-inline">'
                 . '<details class="war-pop"><summary class="mini" title="Renommer la troupe">Renommer</summary>'
@@ -239,9 +256,9 @@ function render_war_board(array $war, array $layout, array $byMember, array $me,
                     $isMe = $mid === (int) $me['id'];
                     echo '<li class="war-slot ' . e(role_class($s['role'])) . ($isMe ? ' is-me' : '') . ($edit ? ' pickable' : '') . '"'
                         . ' data-group="' . $gid . '" data-slot="' . $i . '"' . ($edit ? ' data-member="' . $mid . '" draggable="true"' : '')
-                        . ' title="' . e($s['pseudo'] . ' · ' . ($s['role'] ?: 'sans rôle') . ' · ' . WAR_STATUSES[$s['status']]) . '">'
+                        . ' title="' . e($s['pseudo'] . ' · ' . $s['classe'] . ' · ' . $s['role'] . ' · CP ' . fmt_cp($s['cp']) . ' · ' . WAR_STATUSES[$s['status']]) . '">'
                         . class_icon($s['classe'], 24) . '<span class="war-name">' . e($s['pseudo']) . '</span>'
-                        . war_status_badge($s['status']) . '</li>';
+                        . war_status_badge($s['status']) . war_cp_html($s['cp']) . '</li>';
                 } else {
                     echo '<li class="war-slot war-slot-empty" data-group="' . $gid . '" data-slot="' . $i . '"><span class="sr">Place libre</span></li>';
                 }
@@ -265,24 +282,30 @@ function war_mini_form(string $action, array $fields, string $label, string $tit
     return $h . '<button class="' . e($cls) . ($danger ? ' mini-danger' : '') . '" type="submit" title="' . e($title) . '" aria-label="' . e($title) . '">' . e($label) . '</button></form>';
 }
 
+/** Tri : banc à la fin, puis CP décroissant (CP inconnu en dernier), puis pseudo. */
+function war_cmp_cp(array $a, array $b): int
+{
+    return [$a['status'] === 'bench', $a['cp'] === null, -(int) $a['cp'], mb_strtolower($a['pseudo'])]
+       <=> [$b['status'] === 'bench', $b['cp'] === null, -(int) $b['cp'], mb_strtolower($b['pseudo'])];
+}
+
 /** Joueurs inscrits pas encore placés, par rôle ; on y dépose un joueur pour le sortir de sa troupe. */
 function render_war_pool(array $byMember, array $placed): void
 {
-    $order = array_flip(array_keys(WAR_STATUSES));
     $todo = array_filter($byMember, fn($s) => in_array($s['status'], WAR_PLACEABLE, true) && !isset($placed[(int) $s['member_id']]));
-    usort($todo, fn($a, $b) => [$order[$a['status']], mb_strtolower($a['pseudo'])] <=> [$order[$b['status']], mb_strtolower($b['pseudo'])]);
+    usort($todo, 'war_cmp_cp');
     $byRole = [];
-    foreach ($todo as $s) $byRole[$s['role'] ?: ''][] = $s;
-    $roles = array_values(array_unique(array_merge(opts('role', null, true), array_keys($byRole))));
+    foreach ($todo as $s) $byRole[$s['role']][] = $s;
+    $roles = war_roles_order();
     echo '<aside class="war-pool" data-pool-drop aria-label="Joueurs à placer"><h2>À placer <small>' . count($todo) . '</small></h2>'
         . '<p class="hint">Glisse un joueur sur une place, ou clique sur lui puis sur la place. Sur une place occupée, les deux échangent. Dépose un joueur ici pour le sortir de sa troupe.</p>';
     if (!$todo) echo '<p class="muted small">Tous les inscrits sont placés.</p>';
     foreach ($roles as $role) {
         if (empty($byRole[$role])) continue;
-        echo '<h3 class="' . e(role_class($role ?: null)) . '">' . e($role ?: 'Sans rôle') . ' <small>' . count($byRole[$role]) . '</small></h3><ul class="war-chips">';
+        echo '<h3 class="' . e(role_class($role)) . '">' . e($role) . ' <small>' . count($byRole[$role]) . '</small></h3><ul class="war-chips">';
         foreach ($byRole[$role] as $s) {
-            echo '<li class="war-chip ' . e(role_class($s['role'])) . ' pickable" data-member="' . (int) $s['member_id'] . '" draggable="true">'
-                . class_icon($s['classe'], 22) . '<span class="war-name">' . e($s['pseudo']) . '</span>' . war_status_badge($s['status']) . '</li>';
+            echo '<li class="war-chip ' . e(role_class($s['role'])) . ' pickable" data-member="' . (int) $s['member_id'] . '" draggable="true" title="' . e($s['classe']) . '">'
+                . class_icon($s['classe'], 22) . '<span class="war-name">' . e($s['pseudo']) . '</span>' . war_status_badge($s['status']) . war_cp_html($s['cp']) . '</li>';
         }
         echo '</ul>';
     }
@@ -296,20 +319,22 @@ function render_war_summary(array $war, array $signups, bool $manage): void
     $byRole = [];
     $bench = [];
     $absent = [];
+    usort($signups, 'war_cmp_cp');
     foreach ($signups as $s) {
         if ($s['status'] === 'bench') $bench[] = $s;
         elseif ($s['status'] === 'absent') $absent[] = $s;
-        else $byRole[$s['role'] ?: ''][] = $s;
+        else $byRole[$s['role']][] = $s;
     }
-    $roles = array_values(array_unique(array_merge(opts('role', null, true), array_keys($byRole))));
-    $name = fn($s) => '<li>' . class_icon($s['classe'], 20) . '<span>' . e($s['pseudo']) . '</span>' . war_status_badge($s['status']) . '</li>';
+    $roles = war_roles_order();
+    $name = fn($s) => '<li title="' . e($s['classe']) . '">' . class_icon($s['classe'], 20) . '<span>' . e($s['pseudo']) . '</span>' . war_status_badge($s['status']) . war_cp_html($s['cp']) . '</li>';
     echo '<section class="war-summary"><h2>Réponses <small>' . plural($c['in'], 'inscrit') . ($c['bench'] ? ' (+' . $c['bench'] . ' au banc)' : '')
         . ($c['late'] ? ' · ' . $c['late'] . ' en retard' : '') . ($c['tentative'] ? ' · ' . plural($c['tentative'], 'provisoire') : '') . '</small></h2>';
     if (!$signups) echo '<p class="muted">Personne n\'a encore répondu.</p>';
     echo '<div class="war-roles">';
     foreach ($roles as $role) {
         if (empty($byRole[$role])) continue;
-        echo '<div class="war-role ' . e(role_class($role ?: null)) . '"><h3>' . e($role ?: 'Sans rôle') . ' <b>' . count($byRole[$role]) . '</b></h3><ul class="war-names">'
+        $avg = war_avg_cp($byRole[$role]);
+        echo '<div class="war-role ' . e(role_class($role)) . '"><h3>' . e($role) . ' <b>' . count($byRole[$role]) . ($avg ? ' · CP moyen ' . e(fmt_cp($avg)) : '') . '</b></h3><ul class="war-names">'
             . implode('', array_map($name, $byRole[$role])) . '</ul></div>';
     }
     echo '</div>';
