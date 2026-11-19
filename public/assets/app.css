@@ -143,6 +143,8 @@ p { margin: 0 0 .8em; }
 .legion-stats dt { color: var(--role, var(--mist)); font-size: .85rem; }
 .legion-stats dd { margin: .15rem 0 0; font-family: var(--serif); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
 .legion-stats small { font-size: .9rem; color: var(--mist); }
+.legion-top { margin: 0 0 2rem; }
+.legion-top h2 { font-size: 1.1rem; }
 
 /* Page d'une salle */
 .room-head h1 { font-size: 2.2rem; margin-bottom: .3rem; }

@@ -25,12 +25,8 @@ page_header('Salles', 'rooms');
   <?php if (can_create_room($me)): ?><a class="btn btn-gold" href="room_new.php<?= $type === 'donjon' ? '?kind=donjon' : '' ?>">Créer une salle</a><?php endif; ?>
 </section>
 
-<div data-live data-version="<?= e(rooms_signature()) ?>" data-version-url="api.php" data-partial-url="index.php?partial=1&amp;type=<?= e($type) ?>">
-  <?php render_room_index($rooms, $me, $type); ?>
-</div>
-
-<section class="legion">
-  <h2 class="section-title">La légion cette semaine</h2>
+<section class="legion legion-top">
+  <h2>La légion cette semaine</h2>
   <dl class="legion-stats">
     <div><dt>Membres</dt><dd><?= $stats['total'] ?></dd></div>
     <div><dt>Confirmés, pas encore clear</dt><dd><?= $stats['ready'] ?></dd></div>
@@ -41,4 +37,9 @@ page_header('Salles', 'rooms');
   </dl>
   <p class="muted small">Par rôle : joueurs confirmés et pas encore clear, sur le total inscrit.</p>
 </section>
+
+<div data-live data-version="<?= e(rooms_signature()) ?>" data-version-url="api.php" data-partial-url="index.php?partial=1&amp;type=<?= e($type) ?>">
+  <?php render_room_index($rooms, $me, $type); ?>
+</div>
+
 <?php page_footer();
