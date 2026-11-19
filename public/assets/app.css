@@ -543,6 +543,7 @@ code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-siz
 .war-slot.is-me { box-shadow: inset 0 0 0 1px var(--aether); }
 .war-slot.is-me .war-name { color: var(--aether); }
 .picking .war-slot-empty { border-color: rgba(114, 215, 232, .45); }
+.war.drop-out .is-picked { opacity: .4; outline-color: var(--ember); }  /* lâché ici, le joueur sort de sa troupe */
 .war-add-troop { margin: 0; }
 
 /* Réponses façon Raid-Helper */

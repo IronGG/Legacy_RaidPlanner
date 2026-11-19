@@ -190,9 +190,32 @@
     });
     board.addEventListener('dragend', function () {
       dragging = false;
+      board.classList.remove('drop-out');
       board.querySelectorAll('.drop-hover').forEach(function (el) { el.classList.remove('drop-hover'); });
       if (picked) unpick();
     });
+
+    // War : un joueur placé lâché n'importe où hors des places (marges, en-têtes, autre partie de la page)
+    // sort de sa troupe et repasse dans « À placer ».
+    if (isWar) {
+      const outside = function (ev) {
+        const el = ev.target instanceof Element ? ev.target : null;
+        return dragging && picked && isPlaced(picked) && !(el && el.closest(TARGET));
+      };
+      document.addEventListener('dragover', function (ev) {
+        if (!outside(ev)) { board.classList.remove('drop-out'); return; }
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = 'move';
+        board.classList.add('drop-out');
+      });
+      document.addEventListener('drop', function (ev) {
+        if (!outside(ev)) return;
+        ev.preventDefault();
+        dragging = false;
+        board.classList.remove('drop-out');
+        send({ action: 'unplace', member_id: picked.dataset.member });
+      });
+    }
     document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') unpick(); });
   }
 

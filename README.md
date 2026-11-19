@@ -61,7 +61,8 @@ Les wars sont créées toutes seules chaque semaine, le **jeudi et le samedi à 
   (`war_poll_ms`) et indique qui a fait le dernier changement. Chaque war démarre avec « Troupe 1 », « Troupe 2 » et
   « Retardataires », de 4 groupes de 5 (`war_troops`, `war_group_size`).
   - Glisser un joueur de « À placer » vers une place, ou clic sur le joueur puis clic sur la place (téléphone).
-    Sur une place occupée, les deux échangent. Déposer un joueur dans « À placer » le sort de sa troupe.
+    Sur une place occupée, les deux échangent. Lâcher un joueur dans « À placer », ou n'importe où hors des groupes,
+    le sort de sa troupe.
   - Troupes : renommer, monter / descendre, ajouter un groupe, supprimer, ajouter une troupe de 20.
     Groupes : une place de plus ou de moins, supprimer. Ce qui est supprimé renvoie les joueurs dans « À placer ».
   - **Publier la compo** / Masquer, **Reprendre la compo** de la war précédente (les absents laissent leur place vide),

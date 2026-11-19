@@ -298,7 +298,7 @@ function render_war_pool(array $byMember, array $placed): void
     foreach ($todo as $s) $byRole[$s['role']][] = $s;
     $roles = war_roles_order();
     echo '<aside class="war-pool" data-pool-drop aria-label="Joueurs à placer"><h2>À placer <small>' . count($todo) . '</small></h2>'
-        . '<p class="hint">Glisse un joueur sur une place, ou clique sur lui puis sur la place. Sur une place occupée, les deux échangent. Dépose un joueur ici pour le sortir de sa troupe.</p>';
+        . '<p class="hint">Glisse un joueur sur une place, ou clique sur lui puis sur la place. Sur une place occupée, les deux échangent. Pour sortir un joueur de sa troupe, lâche-le ici ou n\'importe où hors des groupes.</p>';
     if (!$todo) echo '<p class="muted small">Tous les inscrits sont placés.</p>';
     foreach ($roles as $role) {
         if (empty($byRole[$role])) continue;
